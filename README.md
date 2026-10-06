@@ -10,6 +10,7 @@ Detailed notes:
 - [Scalability](runtime-operational/scalability/README.md)
 - [Performance](runtime-operational/performance/README.md)
 - [Maintainability](development-evolution/maintainability/README.md)
+- [Usability](UI-UX/usability/README.md)
 
 ---
 
@@ -109,7 +110,7 @@ Qualities from the user's perspective.
 
 | Attribute | Meaning |
 |---|---|
-| **Usability** | Easy to use (umbrella term for the rows below) |
+| [**Usability**](UI-UX/usability/README.md) | Easy to use (umbrella term for the rows below) |
 | **Learnability** | New users get productive quickly |
 | **Operability** | Easy to control and operate |
 | **Efficiency of use** | Experienced users finish tasks quickly |

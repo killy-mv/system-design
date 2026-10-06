@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usability: Bad vs Good — 3 Interactive Examples</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #5f6b7a;
+    --border: #d9dee5;
+    --bad: #c62828;
+    --bad-bg: #fdecea;
+    --good: #2e7d32;
+    --good-bg: #e8f5e9;
+    --primary: #1a5fd0;
+    --primary-dark: #134aa3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  header {
+    background: #1f2933;
+    color: #fff;
+    padding: 2rem 1.5rem;
+  }
+  header h1 { margin: 0 0 .5rem; font-size: 1.8rem; }
+  header p { margin: 0; color: #cbd2d9; max-width: 60rem; }
+  header a { color: #9ec5ff; }
+  main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
+  nav.toc { margin-bottom: 2rem; }
+  nav.toc a { color: var(--primary); margin-right: 1.25rem; }
+
+  section.example {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  section.example > h2 { margin-top: 0; }
+  .scenario { color: var(--muted); margin-top: -.5rem; }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin: 1.25rem 0;
+  }
+  @media (max-width: 800px) { .compare { grid-template-columns: 1fr; } }
+
+  .panel {
+    border-radius: 10px;
+    padding: 1rem 1.25rem 1.25rem;
+    border: 2px solid;
+    position: relative;
+  }
+  .panel.bad  { border-color: var(--bad);  background: #fffafa; }
+  .panel.good { border-color: var(--good); background: #fafffa; }
+  .badge {
+    display: inline-block;
+    font-weight: 700;
+    font-size: .8rem;
+    letter-spacing: .05em;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    margin-bottom: .75rem;
+  }
+  .bad  .badge { background: var(--bad-bg);  color: var(--bad); }
+  .good .badge { background: var(--good-bg); color: var(--good); }
+  .reset {
+    position: absolute; top: .9rem; right: 1rem;
+    font-size: .8rem; background: none; border: none;
+    color: var(--muted); text-decoration: underline; cursor: pointer;
+  }
+
+  .analysis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 800px) { .analysis { grid-template-columns: 1fr; } }
+  .analysis h3 { margin: 0 0 .5rem; font-size: 1rem; }
+  .analysis ul { margin: 0; padding-left: 1.2rem; }
+  .analysis li { margin-bottom: .35rem; }
+  .problems h3 { color: var(--bad); }
+  .fixes h3 { color: var(--good); }
+  .principles {
+    margin-top: 1rem;
+    font-size: .9rem;
+    color: var(--muted);
+    border-top: 1px dashed var(--border);
+    padding-top: .75rem;
+  }
+  .tag {
+    display: inline-block;
+    background: #eef2f7;
+    border-radius: 4px;
+    padding: .05rem .45rem;
+    margin: .15rem .2rem .15rem 0;
+    font-size: .8rem;
+    color: #334155;
+  }
+
+  /* ---------- Shared demo controls ---------- */
+  .demo input {
+    width: 100%;
+    padding: .6rem .7rem;
+    font-size: 1rem;
+    border: 1px solid #b8c0cc;
+    border-radius: 6px;
+  }
+  .demo input:focus { outline: 3px solid #9ec5ff; outline-offset: 1px; }
+  .btn {
+    font: inherit;
+    padding: .65rem 1.2rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary[disabled] { background: #7d9fd6; cursor: progress; }
+  .btn-secondary { background: #fff; color: var(--text); border-color: #b8c0cc; }
+  .btn-danger { background: var(--bad); color: #fff; }
+
+  /* ---------- Example 1: forms ---------- */
+  .bad-form input { margin-bottom: .5rem; border-color: #ddd; color: #999; }
+  .bad-form input::placeholder { color: #c4c4c4; }
+  .bad-form .btn { background: #ccc; color: #fff; padding: .4rem .8rem; font-size: .85rem; }
+  .bad-error {
+    color: var(--bad); font-size: .75rem; min-height: 1.1rem; margin-bottom: .25rem;
+  }
+
+  .good-form .field { margin-bottom: 1rem; }
+  .good-form label { display: block; font-weight: 600; margin-bottom: .2rem; }
+  .good-form .hint { font-size: .85rem; color: var(--muted); margin: 0 0 .3rem; }
+  .good-form .field-error {
+    color: var(--bad); font-size: .9rem; margin-top: .3rem; display: none;
+  }
+  .good-form .invalid input { border-color: var(--bad); border-width: 2px; }
+  .good-form .invalid .field-error { display: block; }
+  .good-form .valid input { border-color: var(--good); }
+  .success-box {
+    background: var(--good-bg); color: var(--good);
+    padding: .75rem 1rem; border-radius: 6px; font-weight: 600; display: none;
+  }
+
+  /* ---------- Example 2: payment feedback ---------- */
+  .order {
+    border: 1px solid var(--border); border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem;
+    background: #fff;
+  }
+  .order .row { display: flex; justify-content: space-between; }
+  .order .total { font-weight: 700; border-top: 1px solid var(--border); margin-top: .4rem; padding-top: .4rem; }
+  .bank {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: .85rem;
+    background: #1f2933; color: #e4e7eb;
+    border-radius: 6px; padding: .6rem .8rem; margin-top: 1rem; min-height: 4.5rem;
+  }
+  .bank .title { color: #9aa5b1; }
+  .bank .charge { color: #ffb4a9; }
+  .bank .charge.ok { color: #a5d6a7; }
+  .spinner {
+    display: inline-block; width: 1em; height: 1em; vertical-align: -.15em;
+    border: 2px solid rgba(255,255,255,.5); border-top-color: #fff; border-radius: 50%;
+    animation: spin .8s linear infinite; margin-right: .4rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
+  .pay-status { margin-top: .75rem; font-weight: 600; min-height: 1.5rem; }
+  .pay-status.ok { color: var(--good); }
+
+  /* ---------- Example 3: delete ---------- */
+  .file-list { list-style: none; margin: 0; padding: 0; }
+  .file-list li {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .55rem .6rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .file-list li:first-child { border-top: 1px solid var(--border); }
+  .empty-note { color: var(--muted); font-style: italic; padding: .6rem; }
+
+  .bad-actions button {
+    border: none; background: none; cursor: pointer;
+    font-size: .7rem; padding: 0 1px; color: #888;
+  }
+  .good-actions .btn { padding: .4rem .8rem; font-size: .9rem; }
+
+  .modal-backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,.35);
+    display: none; align-items: center; justify-content: center; border-radius: 8px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; padding: 1rem 1.25rem; border-radius: 6px; width: 85%;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25); font-size: .9rem;
+  }
+  .modal p { margin: 0 0 .8rem; }
+  .modal .btn-row { display: flex; gap: .5rem; justify-content: flex-end; }
+  .modal .btn { padding: .35rem .9rem; font-size: .85rem; }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%);
+    background: #1f2933; color: #fff; border-radius: 8px;
+    padding: .6rem .9rem; display: none; align-items: center; gap: 1rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,.25); white-space: nowrap; font-size: .95rem;
+  }
+  .toast.open { display: flex; }
+  .toast button {
+    background: none; border: none; color: #9ec5ff; font-weight: 700;
+    cursor: pointer; font-size: .95rem; text-transform: uppercase;
+  }
+  .trash-link { font-size: .85rem; color: var(--muted); margin-top: .75rem; }
+  .panel-body { position: relative; padding-bottom: 3.5rem; }
+
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 2rem 1rem 3rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Usability: Bad vs Good</h1>
+  <p>
+    Three interactive examples of common usability mistakes and how to fix them.
+    Try the <strong>bad</strong> version first, then the <strong>good</strong> one.
+    Notes: <a href="README.md">Usability README</a>.
+  </p>
+</header>
+
+<main>
+  <nav class="toc">
+    <strong>Examples:</strong>
+    <a href="#ex1">1. Sign-up form</a>
+    <a href="#ex2">2. Payment button</a>
+    <a href="#ex3">3. Deleting a file</a>
+  </nav>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 1: FORM                                                   -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex1">
+    <h2>1. The sign-up form that punishes mistakes</h2>
+    <p class="scenario">
+      Try it: fill in both forms with a short password (e.g. <code>abc</code>) and an email without
+      “@”, then submit.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <span class="badge">✗ BAD</span>
+        <button class="reset" onclick="resetBadForm()">reset</button>
+        <div class="demo bad-form">
+          <div class="bad-error" id="badFormError"></div>
+          <input id="badEmail" type="text" placeholder="Email">
+          <input id="badPassword" type="password" placeholder="Password">
+          <input id="badPhone" type="text" placeholder="Phone">
+          <button class="btn" onclick="submitBadForm()">Submit</button>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <span class="badge">✓ GOOD</span>
+        <button class="reset" onclick="resetGoodForm()">reset</button>
+        <form class="demo good-form" id="goodForm" novalidate>
+          <div class="field" id="fEmail">
+            <label for="goodEmail">Email</label>
+            <input id="goodEmail" type="email" autocomplete="email" aria-describedby="goodEmailErr">
+            <div class="field-error" id="goodEmailErr">Enter an email address like name@example.com.</div>
+          </div>
+          <div class="field" id="fPassword">
+            <label for="goodPassword">Password</label>
+            <p class="hint" id="goodPasswordHint">At least 8 characters.</p>
+            <input id="goodPassword" type="password" autocomplete="new-password"
+                   aria-describedby="goodPasswordHint goodPasswordErr">
+            <div class="field-error" id="goodPasswordErr"></div>
+          </div>
+          <div class="field" id="fPhone">
+            <label for="goodPhone">Phone <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+            <p class="hint" id="goodPhoneHint">Any format — e.g. 090 123 4567 or +84 90 123 4567.</p>
+            <input id="goodPhone" type="tel" inputmode="tel" autocomplete="tel" aria-describedby="goodPhoneHint">
+          </div>
+          <button type="submit" class="btn btn-primary">Create account</button>
+          <div class="success-box" id="goodFormSuccess" role="status" style="margin-top:1rem"></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Placeholders used as labels</strong>: they disappear as soon as you type, so you can't check what a field was for.</li>
+          <li><strong>Unexplained rules</strong>: you only learn the password rules <em>after</em> breaking them.</li>
+          <li><strong>Vague error</strong> (“Invalid input.”) in tiny text at the top, far from where you're looking (change blindness).</li>
+          <li><strong>The form clears itself</strong> on error, so you lose everything you typed.</li>
+          <li><strong>Strict format</strong>: the phone field rejects spaces, dashes and “+”.</li>
+          <li>Pale, low-contrast button that says “Submit”, which doesn't tell you what happens next.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Labels that stay visible</strong> above each field, with <code>&lt;label for&gt;</code> for screen readers.</li>
+          <li><strong>Rules shown up front</strong> as hints (“At least 8 characters”), and optional fields are marked.</li>
+          <li><strong>Inline validation on blur</strong>: each error appears next to its field and says how to fix it.</li>
+          <li><strong>Your input is kept</strong>, and focus moves to the first field with a problem.</li>
+          <li><strong>Accepts any phone format</strong> and normalizes it (Postel's Law).</li>
+          <li>Correct input types and <code>autocomplete</code> for the right mobile keyboard and autofill; the button says “Create account”.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Recognition over recall</span>
+      <span class="tag">Error prevention</span>
+      <span class="tag">Help users recover from errors</span>
+      <span class="tag">Visibility of system status</span>
+      <span class="tag">Postel's Law</span>
+      <span class="tag">Gestalt: proximity</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 2: PAYMENT                                                -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex2">
+    <h2>2. The “did it work?” payment button</h2>
+    <p class="scenario">
+      Try it: click “Pay” once, and if nothing seems to happen, click again (most real users do).
+      Watch the bank statement.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <span class="badge">✗ BAD</span>
+        <button class="reset" onclick="resetBadPay()">reset</button>
+        <div class="demo">
+          <div class="order">
+            <div class="row"><span>Wireless headphones</span><span>$42.00</span></div>
+            <div class="row total"><span>Total</span><span>$42.00</span></div>
+          </div>
+          <button class="btn btn-primary" onclick="badPay()">Pay</button>
+          <div class="pay-status" id="badPayStatus"></div>
+          <div class="bank" id="badBank"><div class="title">// Your bank statement</div></div>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <span class="badge">✓ GOOD</span>
+        <button class="reset" onclick="resetGoodPay()">reset</button>
+        <div class="demo">
+          <div class="order">
+            <div class="row"><span>Wireless headphones</span><span>$42.00</span></div>
+            <div class="row total"><span>Total</span><span>$42.00</span></div>
+          </div>
+          <button class="btn btn-primary" id="goodPayBtn" onclick="goodPay()">Pay $42.00</button>
+          <div class="pay-status" id="goodPayStatus" role="status" aria-live="polite"></div>
+          <div class="bank" id="goodBank"><div class="title">// Your bank statement</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>No feedback</strong>: for ~2.5 s nothing changes, which is well past the 1-second limit for keeping the user's flow.</li>
+          <li>Users assume the click didn't register and <strong>click again</strong>, and every click creates a new charge.</li>
+          <li><strong>The backend isn't idempotent</strong>, so it can't tell a retry from a new purchase.</li>
+          <li>The final message (“Done”) doesn't say <em>what</em> happened or how much was charged.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Instant feedback</strong> (&lt;100 ms): the button switches to “Processing…” with a spinner.</li>
+          <li><strong>Button disabled</strong> while the request is in flight.</li>
+          <li><strong>Idempotency key</strong>: one key is generated per checkout and the server dedupes on it, so even a retry from a flaky network can't charge twice. (The disabled button alone isn't enough; it only guards this one tab.)</li>
+          <li><strong>Specific confirmation</strong>: “Paid $42.00. Order #A-1042 confirmed”, and the button label says the amount up front.</li>
+          <li>Status announced to screen readers via <code>aria-live</code>.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Visibility of system status</span>
+      <span class="tag">Feedback (Norman)</span>
+      <span class="tag">Gulf of evaluation</span>
+      <span class="tag">Response time limits (0.1 s / 1 s / 10 s)</span>
+      <span class="tag">Idempotent APIs</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 3: DELETE                                                 -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex3">
+    <h2>3. The tiny delete icon with a confusing confirmation</h2>
+    <p class="scenario">
+      Try it: in the bad version, quickly edit “Q3-report.pdf” by clicking the <em>first</em> icon, the same spot
+      as on the other rows, then read the dialog carefully.
+      In the good version, delete a file and then change your mind.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <span class="badge">✗ BAD</span>
+        <button class="reset" onclick="resetBadFiles()">reset</button>
+        <div class="demo panel-body">
+          <ul class="file-list" id="badFiles"></ul>
+          <div class="modal-backdrop" id="badModal">
+            <div class="modal" role="dialog" aria-modal="true">
+              <p><strong>Warning</strong><br>Are you sure you don't want to cancel this operation?</p>
+              <div class="btn-row">
+                <button class="btn btn-primary" onclick="badModalAnswer(true)">OK</button>
+                <button class="btn btn-secondary" onclick="badModalAnswer(false)">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div class="pay-status" id="badFileStatus"></div>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <span class="badge">✓ GOOD</span>
+        <button class="reset" onclick="resetGoodFiles()">reset</button>
+        <div class="demo panel-body">
+          <ul class="file-list" id="goodFiles"></ul>
+          <div class="trash-link" id="trashInfo">Deleted files stay in Trash for 30 days.</div>
+          <div class="toast" id="goodToast" role="status" aria-live="polite">
+            <span id="goodToastMsg"></span>
+            <button onclick="undoDelete()">Undo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Tiny targets placed side by side</strong>: ✎ (edit) and 🗑 (delete) are a few pixels apart, so a slip is easy (Fitts's Law, touch-target size). Here the icons are even <em>swapped</em> on one row.</li>
+          <li><strong>Unlabeled icons</strong>: you have to guess what they mean.</li>
+          <li><strong>Double-negative dialog</strong>: “Are you sure you don't want to cancel…?” Which button deletes?</li>
+          <li><strong>Generic buttons</strong>: “OK” / “Cancel” don't say what will happen, and the dangerous action is the highlighted default.</li>
+          <li><strong>No way back</strong>: the hard delete is permanent and there's no undo.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Labeled buttons</strong> (“Rename”, “Delete”) with large targets and a gap between them; the order is the same on every row.</li>
+          <li><strong>Undo instead of confirm</strong>: deleting is immediate, and a toast offers “Undo” for a few seconds. That's faster, and it doesn't train users to click OK without reading.</li>
+          <li><strong>Soft delete</strong>: files go to the Trash for 30 days, so the backend can restore them.</li>
+          <li>Keep confirmation dialogs for <em>truly irreversible</em> actions, and make them specific: “Delete project ‘Apollo’ and its 312 files?” with buttons “Delete project” / “Keep project”.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">User control and freedom (undo)</span>
+      <span class="tag">Error prevention (slips)</span>
+      <span class="tag">Fitts's Law</span>
+      <span class="tag">Consistency</span>
+      <span class="tag">Match the real world (plain language)</span>
+      <span class="tag">Soft delete</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Part of the <a href="README.md">Usability</a> notes · Open this file directly in a browser — no build or server needed.
+</footer>
+
+<script>
+/* =================================================================
+ * Example 1: forms
+ * ================================================================= */
+function submitBadForm() {
+  const email = document.getElementById('badEmail');
+  const pw = document.getElementById('badPassword');
+  const phone = document.getElementById('badPhone');
+  const ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value)
+          && pw.value.length >= 8
+          && (phone.value === '' || /^[0-9]{10}$/.test(phone.value)); // strict: digits only
+  const err = document.getElementById('badFormError');
+  if (!ok) {
+    err.textContent = 'Invalid input.';
+    // The classic sin: wipe everything the user typed.
+    email.value = ''; pw.value = ''; phone.value = '';
+  } else {
+    err.style.color = '#888';
+    err.textContent = 'OK';
+  }
+}
+function resetBadForm() {
+  ['badEmail', 'badPassword', 'badPhone'].forEach(id => document.getElementById(id).value = '');
+  const err = document.getElementById('badFormError');
+  err.textContent = ''; err.style.color = '';
+}
+
+const goodValidators = {
+  goodEmail: v => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim())
+    ? '' : 'Enter an email address like name@example.com.',
+  goodPassword: v => v.length >= 8
+    ? '' : `Password must be at least 8 characters. You entered ${v.length}.`,
+};
+const fieldWrapper = { goodEmail: 'fEmail', goodPassword: 'fPassword' };
+
+function validateGoodField(id) {
+  const input = document.getElementById(id);
+  const msg = goodValidators[id](input.value);
+  const wrap = document.getElementById(fieldWrapper[id]);
+  wrap.classList.toggle('invalid', !!msg);
+  wrap.classList.toggle('valid', !msg);
+  input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  if (msg) document.getElementById(id + 'Err').textContent = msg;
+  return !msg;
+}
+
+Object.keys(goodValidators).forEach(id => {
+  const input = document.getElementById(id);
+  // Validate when the user leaves the field (not on every keystroke)...
+  input.addEventListener('blur', () => { if (input.value !== '') validateGoodField(id); });
+  // ...but once a field is marked invalid, clear the error as soon as it becomes valid.
+  input.addEventListener('input', () => {
+    if (document.getElementById(fieldWrapper[id]).classList.contains('invalid')) validateGoodField(id);
+  });
+});
+
+document.getElementById('goodForm').addEventListener('submit', e => {
+  e.preventDefault();
+  let firstInvalid = null;
+  Object.keys(goodValidators).forEach(id => {
+    if (!validateGoodField(id) && !firstInvalid) firstInvalid = document.getElementById(id);
+  });
+  const success = document.getElementById('goodFormSuccess');
+  if (firstInvalid) {
+    success.style.display = 'none';
+    firstInvalid.focus(); // keep data, move focus to the first problem
+    return;
+  }
+  // Postel's Law: accept any phone format, normalize it ourselves.
+  const rawPhone = document.getElementById('goodPhone').value;
+  const normalized = rawPhone.replace(/[^\d+]/g, '');
+  success.textContent = '✓ Account created for ' + document.getElementById('goodEmail').value.trim()
+    + (normalized ? ` · phone saved as ${normalized}` : '');
+  success.style.display = 'block';
+});
+
+function resetGoodForm() {
+  document.getElementById('goodForm').reset();
+  ['fEmail', 'fPassword'].forEach(id => document.getElementById(id).classList.remove('invalid', 'valid'));
+  document.getElementById('goodFormSuccess').style.display = 'none';
+}
+
+/* =================================================================
+ * Example 2: payment
+ * ================================================================= */
+let badChargeCount = 0;
+function badPay() {
+  // No feedback, no disabling, no idempotency: each click = a new charge.
+  setTimeout(() => {
+    badChargeCount++;
+    const line = document.createElement('div');
+    line.className = 'charge';
+    line.textContent = `CHARGE  -$42.00  ACME STORE  (#${badChargeCount})`;
+    document.getElementById('badBank').appendChild(line);
+    document.getElementById('badPayStatus').textContent = 'Done';
+  }, 2500);
+}
+function resetBadPay() {
+  badChargeCount = 0;
+  document.getElementById('badBank').innerHTML = '<div class="title">// Your bank statement</div>';
+  document.getElementById('badPayStatus').textContent = '';
+}
+
+// Simulated server that dedupes on an idempotency key.
+const fakeServer = {
+  processed: new Map(),
+  charge(idempotencyKey) {
+    return new Promise(resolve => setTimeout(() => {
+      if (this.processed.has(idempotencyKey)) return resolve(this.processed.get(idempotencyKey));
+      const result = { orderId: 'A-' + (1000 + Math.floor(Math.random() * 9000)), amount: 42 };
+      this.processed.set(idempotencyKey, result);
+      const line = document.createElement('div');
+      line.className = 'charge ok';
+      line.textContent = `CHARGE  -$42.00  ACME STORE  (order #${result.orderId})`;
+      document.getElementById('goodBank').appendChild(line);
+      resolve(result);
+    }, 2500));
+  },
+};
+let checkoutKey = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+
+async function goodPay() {
+  const btn = document.getElementById('goodPayBtn');
+  const status = document.getElementById('goodPayStatus');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" aria-hidden="true"></span>Processing…';
+  status.className = 'pay-status';
+  status.textContent = 'Contacting your bank. This usually takes a few seconds.';
+  const result = await fakeServer.charge(checkoutKey);
+  btn.innerHTML = '✓ Paid';
+  status.className = 'pay-status ok';
+  status.textContent = `Paid $${result.amount.toFixed(2)}. Order #${result.orderId} confirmed. Receipt sent to your email.`;
+}
+function resetGoodPay() {
+  checkoutKey = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+  const btn = document.getElementById('goodPayBtn');
+  btn.disabled = false;
+  btn.textContent = 'Pay $42.00';
+  document.getElementById('goodPayStatus').textContent = '';
+  document.getElementById('goodBank').innerHTML = '<div class="title">// Your bank statement</div>';
+}
+
+/* =================================================================
+ * Example 3: delete
+ * ================================================================= */
+const initialFiles = ['Q3-report.pdf', 'budget-2026.xlsx', 'team-photo.jpg', 'contract-signed.pdf'];
+
+// ---- bad ----
+let badFiles = [...initialFiles];
+let pendingBadAction = null;
+
+function renderBadFiles() {
+  const ul = document.getElementById('badFiles');
+  ul.innerHTML = '';
+  if (!badFiles.length) { ul.innerHTML = '<li class="empty-note">No files.</li>'; return; }
+  badFiles.forEach((name, i) => {
+    const li = document.createElement('li');
+    // Inconsistent ordering on one row makes slips even more likely.
+    const swapped = i === 0;
+    const editBtn = `<button title="" onclick="badAction('edit','${name}')">✎</button>`;
+    const delBtn  = `<button title="" onclick="badAction('delete','${name}')">🗑</button>`;
+    li.innerHTML = `<span>${name}</span><span class="bad-actions">${swapped ? delBtn + editBtn : editBtn + delBtn}</span>`;
+    ul.appendChild(li);
+  });
+}
+function badAction(type, name) {
+  pendingBadAction = { type, name };
+  document.getElementById('badModal').classList.add('open');
+}
+function badModalAnswer(ok) {
+  document.getElementById('badModal').classList.remove('open');
+  const status = document.getElementById('badFileStatus');
+  if (ok && pendingBadAction) {
+    if (pendingBadAction.type === 'delete') {
+      badFiles = badFiles.filter(f => f !== pendingBadAction.name);
+      status.style.color = 'var(--bad)';
+      status.textContent = `“${pendingBadAction.name}” permanently deleted.`;
+    } else {
+      status.style.color = 'var(--muted)';
+      status.textContent = `Opened “${pendingBadAction.name}” for editing.`;
+    }
+  } else {
+    status.textContent = '';
+  }
+  pendingBadAction = null;
+  renderBadFiles();
+}
+function resetBadFiles() {
+  badFiles = [...initialFiles];
+  document.getElementById('badFileStatus').textContent = '';
+  document.getElementById('badModal').classList.remove('open');
+  renderBadFiles();
+}
+
+// ---- good ----
+let goodFiles = [...initialFiles];
+let lastDeleted = null;
+let toastTimer = null;
+
+function renderGoodFiles() {
+  const ul = document.getElementById('goodFiles');
+  ul.innerHTML = '';
+  if (!goodFiles.length) {
+    ul.innerHTML = '<li class="empty-note">No files here. Deleted files are in Trash.</li>';
+    return;
+  }
+  goodFiles.forEach(name => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${name}</span>
+      <span class="good-actions" style="display:flex;gap:.75rem">
+        <button class="btn btn-secondary" onclick="alert('Rename dialog would open here.')">Rename</button>
+        <button class="btn btn-secondary" style="color:var(--bad)" onclick="goodDelete('${name}')">Delete</button>
+      </span>`;
+    ul.appendChild(li);
+  });
+}
+function goodDelete(name) {
+  const index = goodFiles.indexOf(name);
+  goodFiles.splice(index, 1);
+  lastDeleted = { name, index };   // soft delete: moved to Trash, restorable
+  renderGoodFiles();
+  document.getElementById('goodToastMsg').textContent = `“${name}” moved to Trash`;
+  document.getElementById('goodToast').classList.add('open');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 6000);
+}
+function undoDelete() {
+  if (!lastDeleted) return;
+  goodFiles.splice(lastDeleted.index, 0, lastDeleted.name);
+  lastDeleted = null;
+  renderGoodFiles();
+  hideToast();
+}
+function hideToast() {
+  document.getElementById('goodToast').classList.remove('open');
+}
+function resetGoodFiles() {
+  goodFiles = [...initialFiles];
+  lastDeleted = null;
+  hideToast();
+  renderGoodFiles();
+}
+
+renderBadFiles();
+renderGoodFiles();
+</script>
+</body>
+</html>
