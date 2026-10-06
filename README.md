@@ -5,11 +5,11 @@
 
 Detailed notes:
 
-- [Availability](availability/README.md)
-- [Reliability](reliability/README.md)
-- [Scalability](scalability/README.md)
-- [Performance](performance/README.md)
-- [Maintainability](maintainability/README.md)
+- [Availability](runtime-operational/availability/README.md)
+- [Reliability](runtime-operational/reliability/README.md)
+- [Scalability](runtime-operational/scalability/README.md)
+- [Performance](runtime-operational/performance/README.md)
+- [Maintainability](development-evolution/maintainability/README.md)
 
 ---
 
@@ -34,14 +34,14 @@ How the system behaves while running.
 
 | Attribute | Meaning | Typical metric |
 |---|---|---|
-| [**Availability**](availability/README.md) | System is up and reachable | Uptime % ("nines"), SLA/SLO |
-| [**Reliability**](reliability/README.md) | Works correctly over time without failure | MTBF, error rate |
+| [**Availability**](runtime-operational/availability/README.md) | System is up and reachable | Uptime % ("nines"), SLA/SLO |
+| [**Reliability**](runtime-operational/reliability/README.md) | Works correctly over time without failure | MTBF, error rate |
 | **Fault tolerance / Resilience** | Keeps working when parts fail | Graceful degradation, failover time |
 | **Recoverability** | Recovers after failure | RTO, RPO |
 | **Durability** | Data isn't lost once written | "11 nines" (S3), replication factor |
-| [**Performance (Latency)**](performance/README.md) | How fast a single request is | p50 / p95 / p99 latency |
+| [**Performance (Latency)**](runtime-operational/performance/README.md) | How fast a single request is | p50 / p95 / p99 latency |
 | **Throughput** | How much work per unit of time | QPS/RPS, TPS |
-| [**Scalability**](scalability/README.md) | Handles growth by adding resources | Horizontal vs vertical, linear scaling |
+| [**Scalability**](runtime-operational/scalability/README.md) | Handles growth by adding resources | Horizontal vs vertical, linear scaling |
 | **Elasticity** | Scales up *and down* automatically with load | Auto-scaling reaction time |
 | **Efficiency / Resource utilization** | Work done per CPU / memory / network unit | CPU %, memory footprint |
 | **Capacity** | Max load before degradation | Peak concurrent users |
@@ -67,7 +67,7 @@ How easy the system is to change.
 
 | Attribute | Meaning |
 |---|---|
-| [**Maintainability**](maintainability/README.md) | Easy to fix and change (umbrella term for the rows below) |
+| [**Maintainability**](development-evolution/maintainability/README.md) | Easy to fix and change (umbrella term for the rows below) |
 | **Modularity** | Split into independent components |
 | **Reusability** | Components can be reused elsewhere |
 | **Analyzability / Readability** | Easy to understand and diagnose |
