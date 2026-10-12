@@ -26,8 +26,10 @@ Related: [Scalability](../scalability/README.md) (keeping performance as load gr
 15. [Approaches by system type](#15-approaches-by-system-type)
 16. [Trade-offs](#16-trade-offs)
 17. [Anti-patterns](#17-anti-patterns)
-18. [Checklist](#18-checklist)
-19. [Further reading](#19-further-reading)
+18. [Real-world performance stories](#18-real-world-performance-stories)
+19. [Checklist](#19-checklist)
+20. [Exercises](#20-exercises)
+21. [Further reading](#21-further-reading)
 
 ---
 
@@ -54,6 +56,18 @@ Latency
   0%                 ~70%            100%
 ```
 For an M/M/1 queue: `wait ∝ ρ / (1 − ρ)`. At 50% utilisation, waiting ≈ 1× service time; at 90% → 9×; at 99% → 99×. **Keep critical resources well below 100%** (often 60–75% target).
+
+Worked example: a server takes **10 ms** to handle a request (service time `S`). Average response time for an M/M/1 queue is `S / (1 − ρ)`:
+
+| Utilisation (ρ) | Avg response time | vs. idle |
+|---|---|---|
+| 10% | 11 ms | 1.1× |
+| 50% | 20 ms | 2× |
+| 80% | 50 ms | 5× |
+| 90% | 100 ms | 10× |
+| 95% | 200 ms | 20× |
+
+Going from 80% to 95% utilisation adds only 19% more throughput but **4× the latency**. Real systems have burstier traffic than the model assumes, so the knee usually comes even earlier.
 
 ### 1.2 Use percentiles, not averages
 Averages hide outliers. Use:
@@ -193,6 +207,34 @@ Set budgets per component, track them, and make each team own its slice.
 Serial:   A(50) → B(80) → C(60) = 190 ms
 Parallel: A, B, C at once     =  80 ms (slowest)
 ```
+
+### Worked example: tracing a slow endpoint
+
+`GET /products/42` (product page API) has a p99 of **1,250 ms**. The goal is < 300 ms. A distributed trace of a slow request shows:
+
+```
+GET /products/42                                      1,250 ms
+├─ auth check (calls auth service, no caching)          60 ms
+├─ SELECT product                                        8 ms
+├─ SELECT reviews (1 query)                             12 ms
+├─ SELECT author for each review (40 queries, N+1)     480 ms
+├─ GET pricing service           ┐                      150 ms
+├─ GET inventory service         ├ called one by one    130 ms
+├─ GET recommendations service   ┘                      250 ms
+└─ serialise 1.8 MB JSON response                      160 ms
+```
+
+Fixes, **biggest first**, re-measuring after each:
+
+| Fix | Saves | p99 after |
+|---|---|---|
+| Replace 40 author queries with one join / `IN (...)` (§6.2) | ~470 ms | ~780 ms |
+| Call pricing, inventory and recommendations **in parallel** (§9.2) | ~280 ms (sum 530 → max 250) | ~500 ms |
+| Recommendations: 100 ms timeout + fallback to cached "popular items" (§11) | ~100 ms (the parallel group is now limited by pricing at 150 ms) | ~400 ms |
+| Return only needed fields, paginate reviews (20 instead of all), compress (§7.2) | ~130 ms | ~270 ms |
+| Cache auth token validation for 60 s (§5) | ~55 ms | ~215 ms |
+
+Result: **1,250 → ~215 ms** without changing language, framework or hardware. The next target is now obvious from the trace: the pricing service (150 ms). Notice what was **not** needed: micro-optimising code. The time was in round trips, waiting, and bytes.
 
 ---
 
@@ -669,7 +711,23 @@ For user-facing systems, most of the perceived latency is often in the client.
 
 ---
 
-## 18. Checklist
+## 18. Real-world performance stories
+
+| Story | What happened | Lesson |
+|---|---|---|
+| **"Speed is revenue" (Amazon, Google, mid-2000s)** | Widely cited internal experiments: Amazon found every 100 ms of extra latency cost about 1% of sales. Google found that 500 ms slower search results reduced traffic by about 20%. | Small delays have a measurable business cost. Latency is a product feature. |
+| **Pinterest (2017)** | Rebuilt pages to cut *perceived* wait time by about 40%. Search engine traffic and sign-ups rose by about 15%. | Perceived performance (what users feel) is what counts (§1.3, §13). |
+| **Stack Overflow (Jul 2016)** | A post containing about 20,000 consecutive whitespace characters hit a regular expression that trims whitespace. The regex backtracked so badly that it consumed the CPU on the web servers, and the site was down for about 34 minutes. | Regex backtracking is a real algorithmic-complexity risk (§8.1). Use linear-time regex engines or input limits. |
+| **Facebook memcache (2013 paper)** | At their scale, a popular key expiring caused a **thundering herd** of DB queries. They added **leases**: only one client gets permission to refill a missing key, others wait briefly or use stale data. | Cache stampedes are a real problem, and coalescing fixes them (§5.6). |
+| **Google "The Tail at Scale" (2013)** | In a Bigtable benchmark reading 1,000 keys, sending a **hedged** request after 10 ms cut 99.9th-percentile latency from **1,800 ms to 74 ms**, for only 2% more requests. | Tail latency can be engineered down cheaply (§11). |
+| **Uber: Postgres → MySQL (2016)** | Uber's blog described how Postgres's design (every index pointing at the physical row location) caused **write amplification**: updating one column rewrote every index. Plus replication bandwidth and upgrade pain. | Storage engine internals matter at scale (§6.5). (The Postgres community published detailed counter-arguments, worth reading both.) |
+| **Discord Read States: Go → Rust (2020)** | A Go service with a large in-memory cache had **latency spikes about every 2 minutes** from garbage collection scanning the cache. Rewritten in Rust (no GC), the spikes disappeared and average latency also dropped. | GC pauses show up in the tail (§8.2, §11). Measure p99, not averages. |
+
+Common threads: **measure what users feel**, the **tail** (not the average) is where problems hide, and the biggest wins come from **algorithms and architecture** (round trips, caching, data layout), not micro-optimisation.
+
+---
+
+## 19. Checklist
 
 **Goals & measurement**
 - [ ] Latency SLOs (p50/p95/p99) and throughput targets per critical endpoint/flow
@@ -705,7 +763,22 @@ For user-facing systems, most of the perceived latency is often in the client.
 
 ---
 
-## 19. Further reading
+## 20. Exercises
+
+1. **Queueing.** A service has a 20 ms service time and runs at 60% utilisation. Traffic grows 40%. Using `S / (1 − ρ)`, what happens to the average response time? How many more servers keep it under 50 ms? (§1.1)
+2. **Fan-out amplification.** A page calls 30 backends in parallel; each has p99 = 200 ms and p50 = 20 ms. What fraction of page loads take ≥ 200 ms? What if you cut the fan-out to 10? (§1.2)
+3. **Latency budget.** Write a latency budget for "search products" with a 200 ms p99 target. It calls: auth, search engine, pricing service, and a personalisation service. Which calls can run in parallel? Which can have a fallback? (§4)
+4. **Speed of light.** Light in fibre travels about 200,000 km/s. What's the **minimum** round trip from Hanoi to a server in Virginia (~14,000 km)? A page needs 4 sequential round trips (DNS, TCP, TLS, request). What's the floor on its load time, and what would you change? (§2, §7)
+5. **Read a query plan.** Run `EXPLAIN ANALYZE` on `SELECT * FROM orders WHERE customer_id = 7 ORDER BY created_at DESC LIMIT 20` with no index, an index on `customer_id`, and a composite index on `(customer_id, created_at)`. Explain the differences (§6.1, §6.2).
+6. **Pool sizing.** An API handles 800 RPS. Each request makes 2 DB queries of 6 ms and one call to a service with 40 ms latency. Using Little's Law, how many DB connections and concurrent outgoing HTTP calls do you need on average? Why add headroom? (§9.3)
+7. **Batching trade-off.** A Kafka producer sends 5,000 messages/s of 1 KB. Compare `linger.ms = 0` vs `linger.ms = 20`. What happens to requests per second, compression ratio and per-message latency? When is each the right choice? (§10, §15.8)
+8. **Cache design.** For a news site home page that changes every few minutes and gets 50k RPS: which cache layers would you use, with what TTLs, and how do you prevent a stampede when the home page expires? (§5)
+9. **Core Web Vitals audit.** Run Lighthouse (or PageSpeed Insights) on a site you built and on a big site you use. Write down LCP, INP and CLS. For each failing metric, find the cause and a fix (§13).
+10. **Read a story** from §18 in full (the Discord and Uber blog posts and "The Tail at Scale" paper are all good reads). What was measured, what was the bottleneck, and what alternatives were considered?
+
+---
+
+## 21. Further reading
 
 - *Systems Performance* (Brendan Gregg) — the reference on methodology and OS-level analysis; brendangregg.com (USE method, flame graphs)
 - *Designing Data-Intensive Applications* (Kleppmann) — ch. 1 (percentiles), ch. 3 (storage engines)

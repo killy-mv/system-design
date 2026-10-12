@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accessibility: Bad vs Good — 4 Interactive Examples</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #52606d;
+    --border: #d9dee5;
+    --bad: #b71c1c;
+    --bad-bg: #fdecea;
+    --good: #1b5e20;
+    --good-bg: #e8f5e9;
+    --warn: #8a4b00;
+    --primary: #1a5fd0;
+    --primary-dark: #134aa3;
+    --focus: #1a5fd0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  html { scroll-padding-top: 1rem; }
+
+  .visually-hidden {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  .skip-link {
+    position: absolute; left: 1rem; top: -4rem; z-index: 10;
+    background: #fff; color: var(--primary); padding: .6rem 1rem; border-radius: 6px;
+    font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  }
+  .skip-link:focus { top: 1rem; }
+
+  header {
+    background: #1f2933;
+    color: #fff;
+    padding: 2rem 1.5rem;
+  }
+  header h1 { margin: 0 0 .5rem; font-size: 1.8rem; }
+  header p { margin: 0 0 .4rem; color: #d5dbe1; max-width: 62rem; }
+  header a { color: #b5d3ff; }
+  header :focus-visible { outline-color: #b5d3ff; }
+  main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
+  main:focus { outline: none; }
+  nav.toc { margin-bottom: 2rem; }
+  nav.toc ul { display: inline; list-style: none; padding: 0; margin: 0; }
+  nav.toc li { display: inline; margin-right: 1.25rem; }
+  nav.toc a { color: var(--primary); }
+
+  section.example {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  section.example > h2 { margin-top: 0; }
+  .scenario { color: var(--muted); margin-top: -.5rem; }
+  kbd {
+    font-family: ui-monospace, Consolas, monospace; font-size: .85em;
+    border: 1px solid #b8c0cc; border-bottom-width: 2px; border-radius: 4px;
+    padding: 0 .3rem; background: #fff;
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin: 1.25rem 0;
+  }
+  @media (max-width: 800px) { .compare { grid-template-columns: 1fr; } }
+
+  .panel {
+    border-radius: 10px;
+    padding: 1rem 1.25rem 1.25rem;
+    border: 2px solid;
+    position: relative;
+    min-width: 0;
+  }
+  .panel.bad  { border-color: var(--bad);  background: #fffafa; }
+  .panel.good { border-color: var(--good); background: #fafffa; }
+  .badge {
+    display: inline-block;
+    font-weight: 700;
+    font-size: .8rem;
+    letter-spacing: .05em;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    margin: 0 0 .75rem;
+  }
+  .bad  .badge { background: var(--bad-bg);  color: var(--bad); }
+  .good .badge { background: var(--good-bg); color: var(--good); }
+  .reset {
+    position: absolute; top: .9rem; right: 1rem;
+    font: inherit; font-size: .85rem; background: none; border: none;
+    color: var(--muted); text-decoration: underline; cursor: pointer;
+    padding: .2rem .3rem;
+  }
+
+  .analysis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 800px) { .analysis { grid-template-columns: 1fr; } }
+  .analysis h3 { margin: 0 0 .5rem; font-size: 1rem; }
+  .analysis ul { margin: 0; padding-left: 1.2rem; }
+  .analysis li { margin-bottom: .35rem; }
+  .problems h3 { color: var(--bad); }
+  .fixes h3 { color: var(--good); }
+  .principles {
+    margin-top: 1rem;
+    font-size: .9rem;
+    color: var(--muted);
+    border-top: 1px dashed var(--border);
+    padding-top: .75rem;
+  }
+  .tag {
+    display: inline-block;
+    background: #eef2f7;
+    border-radius: 4px;
+    padding: .05rem .45rem;
+    margin: .15rem .2rem .15rem 0;
+    font-size: .8rem;
+    color: #334155;
+  }
+
+  /* ---------- Shared controls ---------- */
+  .btn {
+    font: inherit;
+    padding: .6rem 1.1rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-secondary { background: #fff; color: var(--text); border-color: #6b7785; }
+  .btn-danger { background: var(--bad); color: #fff; }
+  .live-msg { min-height: 1.6rem; margin-top: .6rem; font-weight: 600; color: var(--good); }
+
+  /* ---------- Simulated screen reader ---------- */
+  .sr-box {
+    margin-top: 1rem;
+    border-radius: 8px;
+    background: #111827;
+    color: #e5e7eb;
+    font-size: .88rem;
+    overflow: hidden;
+  }
+  .sr-head {
+    display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
+    padding: .45rem .6rem; background: #1f2937;
+  }
+  .sr-head .sr-title { font-weight: 700; margin-right: auto; color: #f3f4f6; }
+  .sr-head button {
+    font: inherit; font-size: .8rem; color: #111827; background: #e5e7eb;
+    border: none; border-radius: 4px; padding: .3rem .55rem; cursor: pointer; min-height: 32px;
+  }
+  .sr-head button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 1px; }
+  .sr-output {
+    margin: 0; padding: .55rem .75rem; list-style: none;
+    font-family: ui-monospace, Consolas, monospace; min-height: 3.2rem; max-height: 14rem; overflow-y: auto;
+  }
+  .sr-output li { padding: .12rem 0; }
+  .sr-output li.sr-hint { color: #9ca3af; font-style: italic; font-family: system-ui, sans-serif; }
+  .sr-output .warn { color: #fca5a5; font-family: system-ui, sans-serif; font-size: .8rem; }
+  .sr-output .live { color: #86efac; }
+  .sr-output li::before { content: "🔊 "; }
+  .sr-output li.sr-hint::before { content: ""; }
+
+  /* ---------- Example 1: color & contrast ---------- */
+  .sim-toolbar {
+    border: 1px solid var(--border); border-radius: 8px; padding: .5rem .9rem .7rem; margin: 1rem 0 0;
+    background: #f9fafb;
+  }
+  .sim-toolbar legend { font-weight: 700; padding: 0 .3rem; }
+  .sim-toolbar label { margin-right: 1rem; white-space: nowrap; display: inline-flex; align-items: center; gap: .3rem; min-height: 32px; }
+  .compare.sim-grayscale    .demo-visual { filter: grayscale(1); }
+  .compare.sim-protanopia   .demo-visual { filter: url(#protanopia); }
+  .compare.sim-deuteranopia .demo-visual { filter: url(#deuteranopia); }
+  .compare.sim-blur         .demo-visual { filter: blur(1.8px); }
+
+  .status-card { background: #fff; border-radius: 8px; padding: .8rem 1rem; border: 1px solid var(--border); }
+  .status-card h3 { margin: 0; font-size: 1.05rem; }
+  .services { list-style: none; padding: 0; margin: .6rem 0; }
+  .services li { display: flex; justify-content: space-between; align-items: center; padding: .35rem 0; border-bottom: 1px solid #eef0f3; }
+  .chip {
+    display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: .72rem;
+    border-radius: 4px; padding: 0 .35rem; margin-left: .35rem; vertical-align: middle;
+    font-weight: 600; line-height: 1.5; white-space: nowrap; filter: none;
+  }
+  .chip.fail { background: var(--bad-bg); color: var(--bad); }
+  .chip.pass { background: var(--good-bg); color: var(--good); }
+
+  /* bad */
+  .c-bad .sub { color: #b3b3b3; font-size: .85rem; margin: .1rem 0 0; }
+  .c-bad .dot { width: .7rem; height: .7rem; border-radius: 50%; display: inline-block; }
+  .c-bad .dot.up { background: #4caf50; }
+  .c-bad .dot.down { background: #f44336; }
+  .c-bad .dot.degraded { background: #ff9800; }
+  .c-bad .note { color: #8a8a8a; font-size: .9rem; }
+  .c-bad .note a { color: #6b9bd1; text-decoration: none; }
+  .c-bad .field label { display: block; color: #9e9e9e; font-size: .85rem; }
+  .c-bad .field input {
+    width: 100%; padding: .5rem; font: inherit; border: 1px solid #ef9a9a; border-radius: 4px; color: #333;
+  }
+  .c-bad .bad-btn {
+    margin-top: .8rem; font: inherit; border: none; border-radius: 4px;
+    background: #ffb74d; color: #fff; padding: .5rem 1rem; cursor: pointer;
+  }
+
+  /* good */
+  .c-good .sub { color: var(--muted); font-size: .9rem; margin: .1rem 0 0; }
+  .c-good .state { font-weight: 600; display: inline-flex; align-items: center; gap: .35rem; }
+  .c-good .state.up { color: var(--good); }
+  .c-good .state.down { color: var(--bad); }
+  .c-good .state.degraded { color: var(--warn); }
+  .c-good .note { color: #3e4c59; font-size: .95rem; }
+  .c-good .note a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+  .c-good .field label { display: block; font-weight: 600; }
+  .c-good .field input {
+    width: 100%; padding: .5rem; font: inherit; border: 2px solid var(--bad); border-radius: 4px; color: var(--text);
+  }
+  .c-good .field-error { color: var(--bad); font-size: .9rem; margin: .3rem 0 0; font-weight: 600; }
+  .c-good .good-btn {
+    margin-top: .8rem; font: inherit; border: none; border-radius: 6px;
+    background: #a34400; color: #fff; padding: .6rem 1.1rem; cursor: pointer; min-height: 44px;
+  }
+
+  .checker {
+    margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem;
+    display: grid; grid-template-columns: auto auto 1fr; gap: 1rem 1.5rem; align-items: center;
+  }
+  @media (max-width: 800px) { .checker { grid-template-columns: 1fr; } }
+  .checker h3 { grid-column: 1 / -1; margin: 0; font-size: 1rem; }
+  .checker .pick label { display: block; font-weight: 600; font-size: .9rem; }
+  .checker .pick input[type=color] { width: 3rem; height: 2.4rem; vertical-align: middle; border: 1px solid #6b7785; padding: 2px; }
+  .checker .pick input[type=text] { width: 6.5rem; font: inherit; padding: .35rem .5rem; border: 1px solid #6b7785; border-radius: 4px; }
+  .checker .preview { border-radius: 6px; padding: .6rem .9rem; border: 1px solid var(--border); }
+  .checker .preview .big { font-size: 1.5rem; font-weight: 400; }
+  .checker .results { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .checker .ratio { font-size: 1.4rem; font-weight: 800; margin-right: .5rem; }
+  .checker .res { font-size: .85rem; border-radius: 4px; padding: .1rem .5rem; font-weight: 600; }
+  .checker .res.pass { background: var(--good-bg); color: var(--good); }
+  .checker .res.fail { background: var(--bad-bg); color: var(--bad); }
+
+  /* ---------- Example 2: keyboard ---------- */
+  .settings { list-style: none; margin: 0 0 1rem; padding: 0; }
+  .settings li, .settings .row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .55rem 0; border-bottom: 1px solid var(--border);
+  }
+  .kbd-bad *:focus { outline: none; }          /* the classic mistake */
+  .fake-toggle {
+    width: 2.6rem; height: 1.4rem; border-radius: 999px; background: #cfd4da; position: relative; cursor: pointer;
+  }
+  .fake-toggle::after {
+    content: ""; position: absolute; top: .15rem; left: .15rem; width: 1.1rem; height: 1.1rem;
+    border-radius: 50%; background: #fff; transition: left .15s;
+  }
+  .fake-toggle.on { background: #81c784; }
+  .fake-toggle.on::after { left: 1.35rem; }
+  .fake-save {
+    display: inline-block; background: #64b5f6; color: #fff; padding: .45rem 1rem; border-radius: 4px; cursor: pointer;
+  }
+  .fake-msg { color: #a5d6a7; min-height: 1.6rem; margin-top: .6rem; }
+
+  .switch-wrap { display: inline-flex; align-items: center; gap: .5rem; }
+  .switch {
+    width: 3rem; height: 1.7rem; border-radius: 999px; border: 2px solid #4b5563; background: #fff;
+    position: relative; cursor: pointer; padding: 0;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: .15rem; left: .15rem; width: 1.15rem; height: 1.15rem;
+    border-radius: 50%; background: #4b5563; transition: left .15s;
+  }
+  .switch[aria-checked="true"] { background: var(--good); border-color: var(--good); }
+  .switch[aria-checked="true"]::after { left: 1.4rem; background: #fff; }
+  .switch-state { font-size: .85rem; font-weight: 600; width: 2rem; color: var(--muted); }
+  @media (forced-colors: active) {
+    .switch[aria-checked="true"]::after { background: Highlight; }
+    .switch::after { background: ButtonText; }
+  }
+
+  /* ---------- Example 3: screen reader ---------- */
+  .product { display: grid; grid-template-columns: 120px 1fr; gap: .9rem; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: .8rem; }
+  @media (max-width: 420px) { .product { grid-template-columns: 1fr; } }
+  .product img { width: 120px; height: 80px; border-radius: 6px; display: block; }
+  .product .p-title { font-size: 1.05rem; font-weight: 700; margin: 0; }
+  .product .price { font-weight: 700; margin: .1rem 0; }
+  .product .stars { color: #b26a00; letter-spacing: .05em; }
+  .product .meta { font-size: .9rem; margin: .25rem 0; }
+  .product .actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
+  .icon-btn {
+    width: 2.2rem; height: 2.2rem; display: inline-grid; place-items: center; border-radius: 6px;
+    border: 1px solid #c3cad3; background: #fff; cursor: pointer; padding: 0;
+  }
+  .good .icon-btn { width: 44px; height: 44px; border-color: #6b7785; }
+  .icon-btn svg { width: 1.1rem; height: 1.1rem; }
+  .icon-btn[aria-pressed="true"] svg path { fill: var(--bad); stroke: var(--bad); }
+  .qty { width: 4rem; font: inherit; padding: .35rem; border: 1px solid #6b7785; border-radius: 4px; }
+  .product .bad-msg { color: #4caf50; font-size: .85rem; }
+  .product a { color: var(--primary); }
+
+  /* ---------- Example 4: modal ---------- */
+  .panel-body { position: relative; min-height: 13rem; }
+  .account-nav { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .account-nav a { color: var(--primary); }
+  .fake-overlay {
+    position: absolute; inset: -.25rem; background: rgba(0,0,0,.45); border-radius: 8px;
+    display: none; align-items: center; justify-content: center;
+  }
+  .fake-overlay.open { display: flex; }
+  .fake-modal { background: #fff; border-radius: 6px; padding: 1rem 1.2rem; width: 88%; position: relative; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+  .fake-modal .x { position: absolute; top: .3rem; right: .6rem; color: #aaa; cursor: pointer; font-size: 1.2rem; }
+  .fake-modal .t { font-weight: 700; margin-bottom: .3rem; }
+  .fake-modal .row { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .8rem; }
+  .fake-modal .fb { padding: .35rem .9rem; border-radius: 4px; cursor: pointer; background: #eee; font-size: .9rem; }
+  .fake-modal .fb.danger { background: #e57373; color: #fff; }
+
+  dialog.good-dialog {
+    border: none; border-radius: 10px; padding: 1.25rem 1.5rem; max-width: 28rem; width: calc(100% - 2rem);
+    box-shadow: 0 12px 32px rgba(0,0,0,.3); margin-top: 12vh;
+  }
+  dialog.good-dialog::backdrop { background: rgba(15, 23, 42, .4); }
+  dialog.good-dialog h3 { margin: 0 0 .4rem; }
+  dialog.good-dialog .btn-row { display: flex; gap: .6rem; justify-content: flex-end; margin-top: 1.2rem; flex-wrap: wrap; }
+
+  footer { text-align: center; color: var(--muted); font-size: .9rem; padding: 2rem 1rem 3rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<!-- Color-blindness simulation filters (approximate matrices) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="protanopia"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/></filter>
+  <filter id="deuteranopia"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/></filter>
+</svg>
+
+<header>
+  <h1>Accessibility: Bad vs Good</h1>
+  <p>
+    Four interactive examples of common accessibility barriers and how to fix them.
+    Try each <strong>bad</strong> version first, then the <strong>good</strong> one, ideally <strong>using only your keyboard</strong>
+    (<kbd>Tab</kbd>, <kbd>Shift</kbd>+<kbd>Tab</kbd>, <kbd>Enter</kbd>, <kbd>Space</kbd>, <kbd>Esc</kbd>).
+  </p>
+  <p>
+    The dark “Screen reader (simulated)” boxes show roughly what a screen reader would announce. It's a simplified model of the
+    accessibility tree, so for the real experience turn on NVDA, VoiceOver or TalkBack.
+    Notes: <a href="README.md">Accessibility README</a>.
+  </p>
+  <p>Tip: press <kbd>Tab</kbd> once on page load. This page has a skip link, as every page should.</p>
+</header>
+
+<main id="main" tabindex="-1">
+  <nav class="toc" aria-label="Examples">
+    <strong>Examples:</strong>
+    <ul>
+      <li><a href="#ex1">1. Color &amp; contrast</a></li>
+      <li><a href="#ex2">2. Keyboard access</a></li>
+      <li><a href="#ex3">3. Screen reader names</a></li>
+      <li><a href="#ex4">4. Modal dialog focus</a></li>
+    </ul>
+  </nav>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 1: COLOR & CONTRAST                                       -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex1" aria-labelledby="ex1-title">
+    <h2 id="ex1-title">1. The status page you can only read with perfect color vision</h2>
+    <p class="scenario">
+      Try it: which service is down? Now switch the simulation to <em>Deuteranopia</em> (the most common color-vision
+      deficiency), <em>Grayscale</em> or <em>Blurred vision</em> and ask again. The chips show measured contrast ratios.
+    </p>
+
+    <fieldset class="sim-toolbar">
+      <legend>Simulate how it looks</legend>
+      <label><input type="radio" name="sim" value="" checked> Normal vision</label>
+      <label><input type="radio" name="sim" value="deuteranopia"> Deuteranopia (red-green)</label>
+      <label><input type="radio" name="sim" value="protanopia"> Protanopia (red-green)</label>
+      <label><input type="radio" name="sim" value="grayscale"> Grayscale</label>
+      <label><input type="radio" name="sim" value="blur"> Blurred vision</label>
+    </fieldset>
+
+    <div class="compare" id="ex1compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <p class="visually-hidden sr-ignore">The following example is intentionally inaccessible.</p>
+        <div class="demo-visual c-bad">
+          <div class="status-card">
+            <h3>System status</h3>
+            <p class="sub" data-contrast>Last updated 2 minutes ago</p>
+            <ul class="services">
+              <li><span>API</span><span class="dot up"></span></li>
+              <li><span>Database</span><span class="dot down"></span></li>
+              <li><span>CDN</span><span class="dot up"></span></li>
+              <li><span>Email delivery</span><span class="dot degraded"></span></li>
+            </ul>
+            <p class="note"><span data-contrast>We're investigating.</span> See the <a href="#ex1" class="demo-link" data-contrast-link>incident history</a> for details.</p>
+            <div class="field">
+              <label for="c1bad" data-contrast>Get updates by email</label>
+              <input id="c1bad" type="text" value="me@example">
+            </div>
+            <button class="bad-btn" type="button" data-contrast>Subscribe</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <div class="demo-visual c-good">
+          <div class="status-card">
+            <h3>System status</h3>
+            <p class="sub" data-contrast>Last updated 2 minutes ago</p>
+            <ul class="services">
+              <li><span>API</span><span class="state up"><span aria-hidden="true">✓</span> Operational</span></li>
+              <li><span>Database</span><span class="state down"><span aria-hidden="true">✕</span> Outage</span></li>
+              <li><span>CDN</span><span class="state up"><span aria-hidden="true">✓</span> Operational</span></li>
+              <li><span>Email delivery</span><span class="state degraded"><span aria-hidden="true">!</span> Degraded</span></li>
+            </ul>
+            <p class="note"><span data-contrast>We're investigating.</span> See the <a href="#ex1" class="demo-link" data-contrast-link>incident history</a> for details.</p>
+            <div class="field">
+              <label for="c1good" data-contrast>Get updates by email</label>
+              <input id="c1good" type="email" value="me@example" aria-invalid="true" aria-describedby="c1goodErr">
+              <p class="field-error" id="c1goodErr"><span aria-hidden="true">⚠</span> Enter a full email address, like name@example.com.</p>
+            </div>
+            <button class="good-btn" type="button" data-contrast>Subscribe</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="checker" aria-labelledby="checker-title">
+      <h3 id="checker-title">Try it yourself: contrast checker</h3>
+      <div class="pick">
+        <label for="fgText">Text color</label>
+        <input type="color" id="fgColor" value="#999999" aria-label="Text color picker">
+        <input type="text" id="fgText" value="#999999" spellcheck="false">
+      </div>
+      <div class="pick">
+        <label for="bgText">Background color</label>
+        <input type="color" id="bgColor" value="#ffffff" aria-label="Background color picker">
+        <input type="text" id="bgText" value="#ffffff" spellcheck="false">
+      </div>
+      <div class="preview" id="ckPreview">
+        <div>Normal text sample (16px)</div>
+        <div class="big">Large text sample (24px)</div>
+      </div>
+      <div class="results" id="ckResults" role="status" aria-live="polite"></div>
+    </section>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Status by color only</strong> (SC 1.4.1): green/red/orange dots look almost the same with red-green color blindness, in grayscale, or on a dim screen. A screen reader gets nothing at all.</li>
+          <li><strong>Low-contrast text</strong> (SC 1.4.3): light gray “Last updated” and the label are far below 4.5:1.</li>
+          <li><strong>Link only distinguished by color</strong>: no underline, and barely different from the surrounding text.</li>
+          <li><strong>Error shown only as a pale red border</strong>: no text says what's wrong; the border also fails 3:1 (SC 1.4.11).</li>
+          <li><strong>White text on light orange</strong>: a brand color that fails contrast badly.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Icon + text + color</strong>: “✕ Outage” works in every simulation and for screen readers (the icons are <code>aria-hidden</code>, the words carry the meaning).</li>
+          <li><strong>All text ≥ 4.5:1</strong>: same layout, just darker grays.</li>
+          <li><strong>Underlined link</strong>: a non-color cue.</li>
+          <li><strong>Error in text</strong>, next to the field, tied with <code>aria-describedby</code> and <code>aria-invalid</code>; thick, high-contrast border.</li>
+          <li><strong>Darker variant of the brand orange</strong> for the button (keep the light one for large decorative areas).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Perceivable</span>
+      <span class="tag">1.4.1 Use of color</span>
+      <span class="tag">1.4.3 Contrast (minimum)</span>
+      <span class="tag">1.4.11 Non-text contrast</span>
+      <span class="tag">3.3.1 Error identification</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 2: KEYBOARD                                               -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex2" aria-labelledby="ex2-title">
+    <h2 id="ex2-title">2. The settings page you can't use without a mouse</h2>
+    <p class="scenario">
+      Try it: click into the panel's top edge, then put the mouse away. Use <kbd>Tab</kbd> to reach the toggles,
+      turn off “SMS alerts” with <kbd>Space</kbd>, and save with <kbd>Enter</kbd>. Watch where the focus goes, and what
+      the simulated screen reader says.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad" data-sr>
+        <p class="badge">✗ BAD</p>
+        <button class="reset sr-ignore" type="button" onclick="resetBadKbd()">reset</button>
+        <p class="visually-hidden sr-ignore">The following example is intentionally inaccessible.</p>
+        <div class="kbd-bad" id="kbdBad">
+          <div class="settings">
+            <div class="row"><span>Email alerts</span><div class="fake-toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="row"><span>SMS alerts</span><div class="fake-toggle on" onclick="this.classList.toggle('on')"></div></div>
+            <div class="row"><span>Weekly digest</span><div class="fake-toggle" onclick="this.classList.toggle('on')"></div></div>
+          </div>
+          <div class="fake-save" tabindex="0" onclick="badSave()">Save</div>
+          <div class="fake-msg" id="badSaveMsg"></div>
+        </div>
+        <div class="sr-box sr-ignore">
+          <div class="sr-head"><span class="sr-title">Screen reader (simulated)</span></div>
+          <ul class="sr-output"><li class="sr-hint">Focus something in this panel…</li></ul>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good" data-sr>
+        <p class="badge">✓ GOOD</p>
+        <button class="reset sr-ignore" type="button" onclick="resetGoodKbd()">reset</button>
+        <div id="kbdGood">
+          <ul class="settings">
+            <li><span id="sw1">Email alerts</span>
+              <span class="switch-wrap"><span class="switch-state" aria-hidden="true">On</span>
+              <button type="button" class="switch" role="switch" aria-checked="true" aria-labelledby="sw1"></button></span></li>
+            <li><span id="sw2">SMS alerts</span>
+              <span class="switch-wrap"><span class="switch-state" aria-hidden="true">On</span>
+              <button type="button" class="switch" role="switch" aria-checked="true" aria-labelledby="sw2"></button></span></li>
+            <li><span id="sw3">Weekly digest</span>
+              <span class="switch-wrap"><span class="switch-state" aria-hidden="true">Off</span>
+              <button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="sw3"></button></span></li>
+          </ul>
+          <button type="button" class="btn btn-primary" onclick="goodSave()">Save settings</button>
+          <p class="live-msg" id="goodSaveMsg" role="status"></p>
+        </div>
+        <div class="sr-box sr-ignore">
+          <div class="sr-head"><span class="sr-title">Screen reader (simulated)</span></div>
+          <ul class="sr-output"><li class="sr-hint">Focus something in this panel…</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Toggles are plain <code>&lt;div&gt;</code>s</strong> with a click handler: <kbd>Tab</kbd> skips them entirely. Keyboard, switch and voice-control users can't change any setting (SC 2.1.1).</li>
+          <li><strong>The “Save” <code>div</code> got <code>tabindex="0"</code></strong>, so it receives focus, but <kbd>Enter</kbd>/<kbd>Space</kbd> do nothing, and it's announced as just “Save” with no role.</li>
+          <li><strong><code>outline: none</code></strong>: when focus lands on “Save” you can't see it (SC 2.4.7).</li>
+          <li><strong>State is color only</strong> (light green vs gray), and screen readers get no on/off state.</li>
+          <li>The “Saved” message is faint and <strong>not announced</strong>.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Real <code>&lt;button&gt;</code>s</strong> with <code>role="switch"</code> + <code>aria-checked</code>: focusable, activate with <kbd>Enter</kbd> and <kbd>Space</kbd> for free, announced as “SMS alerts, switch, on”.</li>
+          <li><strong>Name from the visible label</strong> (<code>aria-labelledby</code>), so voice control users can say “click SMS alerts”.</li>
+          <li><strong>Visible <code>:focus-visible</code> ring</strong> with strong contrast.</li>
+          <li><strong>State shown three ways</strong>: knob position, fill, and “On/Off” text. Also works in Windows high contrast mode.</li>
+          <li><strong>“Settings saved”</strong> in a <code>role="status"</code> live region, announced without moving focus.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Operable</span>
+      <span class="tag">Semantic HTML first</span>
+      <span class="tag">2.1.1 Keyboard</span>
+      <span class="tag">2.4.7 Focus visible</span>
+      <span class="tag">4.1.2 Name, role, value</span>
+      <span class="tag">4.1.3 Status messages</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 3: SCREEN READER NAMES                                    -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex3" aria-labelledby="ex3-title">
+    <h2 id="ex3-title">3. The product card that makes no sense when read aloud</h2>
+    <p class="scenario">
+      Try it: press <strong>“Read panel”</strong> in each screen reader box to hear the card read top to bottom, then
+      <strong>“Links list”</strong> (screen reader users often jump through links out of context). Then <kbd>Tab</kbd>
+      through both cards and click “add to cart”.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad" data-sr>
+        <p class="badge">✗ BAD</p>
+        <p class="visually-hidden sr-ignore">The following example is intentionally inaccessible.</p>
+        <div class="product">
+          <!-- data-file simulates the file name a screen reader reads when alt is missing -->
+          <img data-file="IMG_4027.jpg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'%3E%3Crect width='120' height='80' fill='%23e8edf3'/%3E%3Cpath d='M40 52a20 20 0 0 1 40 0' fill='none' stroke='%231f2933' stroke-width='5'/%3E%3Crect x='33' y='46' width='12' height='20' rx='4' fill='%231f2933'/%3E%3Crect x='75' y='46' width='12' height='20' rx='4' fill='%231f2933'/%3E%3C/svg%3E">
+          <div>
+            <div class="p-title">Wireless headphones</div>
+            <div class="price">$42.00</div>
+            <div class="stars">★★★★☆ (128)</div>
+            <div class="meta">40h battery. For full specs, <a href="#ex3" class="demo-link">click here</a>. <a href="#ex3" class="demo-link">Read more</a></div>
+            <div class="actions">
+              <span>Qty</span><input class="qty" type="number" value="1" min="1">
+              <button type="button" class="icon-btn">
+                <svg viewBox="0 0 24 24"><path d="M12 21s-7-4.4-9.3-9A5.2 5.2 0 0 1 12 6.6 5.2 5.2 0 0 1 21.3 12C19 16.6 12 21 12 21z" fill="none" stroke="#333" stroke-width="2"/></svg>
+              </button>
+              <button type="button" class="icon-btn" onclick="badAddToCart()">
+                <svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11h11l2-8H6.3M9 20a1 1 0 1 0 0-.01M18 20a1 1 0 1 0 0-.01" fill="none" stroke="#333" stroke-width="2"/></svg>
+              </button>
+              <span class="bad-msg" id="badCartMsg"></span>
+            </div>
+          </div>
+        </div>
+        <div class="sr-box sr-ignore">
+          <div class="sr-head">
+            <span class="sr-title">Screen reader (simulated)</span>
+            <button type="button" data-sr-action="read">Read panel</button>
+            <button type="button" data-sr-action="links">Links list</button>
+          </div>
+          <ul class="sr-output"><li class="sr-hint">Press “Read panel”, or Tab into the card…</li></ul>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good" data-sr>
+        <p class="badge">✓ GOOD</p>
+        <article class="product" aria-labelledby="p3title">
+          <img alt="Black over-ear wireless headphones" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'%3E%3Crect width='120' height='80' fill='%23e8edf3'/%3E%3Cpath d='M40 52a20 20 0 0 1 40 0' fill='none' stroke='%231f2933' stroke-width='5'/%3E%3Crect x='33' y='46' width='12' height='20' rx='4' fill='%231f2933'/%3E%3Crect x='75' y='46' width='12' height='20' rx='4' fill='%231f2933'/%3E%3C/svg%3E">
+          <div>
+            <h3 class="p-title" id="p3title">Wireless headphones</h3>
+            <p class="price">$42.00</p>
+            <p class="meta"><span class="stars" role="img" aria-label="Rated 4 out of 5 stars">★★★★☆</span>
+              <a href="#ex3" class="demo-link">Read 128 reviews</a></p>
+            <p class="meta">40h battery. <a href="#ex3" class="demo-link">Full technical specifications</a></p>
+            <div class="actions">
+              <label for="qtyGood">Quantity</label><input class="qty" id="qtyGood" type="number" value="1" min="1">
+              <button type="button" class="icon-btn" aria-label="Add to wishlist" aria-pressed="false" onclick="toggleWish(this)">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-7-4.4-9.3-9A5.2 5.2 0 0 1 12 6.6 5.2 5.2 0 0 1 21.3 12C19 16.6 12 21 12 21z" fill="none" stroke="#333" stroke-width="2"/></svg>
+              </button>
+              <button type="button" class="btn btn-primary" onclick="goodAddToCart()">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:1.1rem;height:1.1rem;vertical-align:-.2em"><path d="M3 4h2l2.4 11h11l2-8H6.3M9 20a1 1 0 1 0 0-.01M18 20a1 1 0 1 0 0-.01" fill="none" stroke="#fff" stroke-width="2"/></svg>
+                Add to cart
+              </button>
+            </div>
+            <p class="live-msg" id="goodCartMsg" role="status"></p>
+          </div>
+        </article>
+        <div class="sr-box sr-ignore">
+          <div class="sr-head">
+            <span class="sr-title">Screen reader (simulated)</span>
+            <button type="button" data-sr-action="read">Read panel</button>
+            <button type="button" data-sr-action="links">Links list</button>
+          </div>
+          <ul class="sr-output"><li class="sr-hint">Press “Read panel”, or Tab into the card…</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>No <code>alt</code> attribute</strong>: many screen readers fall back to reading the file name, “IMG_4027.jpg”.</li>
+          <li><strong>Title is a styled <code>div</code></strong>, not a heading, so users jumping by heading (the most common way to scan a page) never find the product.</li>
+          <li><strong>Stars read character by character</strong>: “black star, black star, black star, black star, white star”.</li>
+          <li><strong>Icon-only buttons with no name</strong>: announced as just “button”. Which one adds to cart? Even sighted users have to guess.</li>
+          <li><strong>Quantity field has no label</strong> (“Qty” is just text next to it).</li>
+          <li><strong>“Click here” / “Read more”</strong>: meaningless in the links list.</li>
+          <li><strong>“✓ Added”</strong> appears visually but is never announced.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Meaningful <code>alt</code></strong> describing what matters on a product page.</li>
+          <li><strong>Real <code>&lt;h3&gt;</code></strong>, and the card is an <code>&lt;article&gt;</code> labelled by it.</li>
+          <li><strong>Rating as one graphic</strong>: <code>role="img" aria-label="Rated 4 out of 5 stars"</code>.</li>
+          <li><strong>Wishlist</strong> has <code>aria-label</code> and <code>aria-pressed</code>; <strong>“Add to cart” has visible text</strong> (best option); SVGs are <code>aria-hidden</code>.</li>
+          <li><strong><code>&lt;label for&gt;</code></strong> on Quantity; 44px targets.</li>
+          <li><strong>Descriptive links</strong>: “Read 128 reviews”, “Full technical specifications”.</li>
+          <li><strong>Live region</strong> announces “Added to cart. Cart has 1 item.”</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Perceivable / Robust</span>
+      <span class="tag">1.1.1 Non-text content</span>
+      <span class="tag">1.3.1 Info and relationships</span>
+      <span class="tag">2.4.4 Link purpose</span>
+      <span class="tag">2.4.6 Headings and labels</span>
+      <span class="tag">4.1.2 Name, role, value</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 4: MODAL DIALOG                                           -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex4" aria-labelledby="ex4-title">
+    <h2 id="ex4-title">4. The modal that traps sighted users and loses keyboard users</h2>
+    <p class="scenario">
+      Try it with the keyboard: <kbd>Tab</kbd> to “Delete account”, press <kbd>Enter</kbd>. Where is focus now? Press
+      <kbd>Tab</kbd> a few times, then try <kbd>Esc</kbd>. In the good version, notice that focus returns to the button
+      when the dialog closes.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad" data-sr>
+        <p class="badge">✗ BAD</p>
+        <button class="reset sr-ignore" type="button" onclick="closeBadModal()">reset</button>
+        <p class="visually-hidden sr-ignore">The following example is intentionally inaccessible.</p>
+        <div class="panel-body">
+          <div class="account-nav"><a href="#ex4" class="demo-link">Profile</a><a href="#ex4" class="demo-link">Billing</a><a href="#ex4" class="demo-link">Security</a></div>
+          <p>Danger zone</p>
+          <button type="button" class="btn btn-danger" onclick="openBadModal()">Delete account</button>
+          <p class="fake-msg" id="badModalMsg" style="color:#e57373"></p>
+          <div class="fake-overlay" id="badOverlay">
+            <div class="fake-modal">
+              <span class="x" onclick="closeBadModal()">×</span>
+              <div class="t">Are you sure?</div>
+              <div style="font-size:.9rem">This can't be undone.</div>
+              <div class="row">
+                <div class="fb" onclick="closeBadModal()">No</div>
+                <div class="fb danger" onclick="badConfirm()">Yes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sr-box sr-ignore">
+          <div class="sr-head"><span class="sr-title">Screen reader (simulated)</span></div>
+          <ul class="sr-output"><li class="sr-hint">Focus something in this panel…</li></ul>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good" data-sr>
+        <p class="badge">✓ GOOD</p>
+        <div class="panel-body">
+          <nav class="account-nav" aria-label="Account"><a href="#ex4" class="demo-link">Profile</a><a href="#ex4" class="demo-link">Billing</a><a href="#ex4" class="demo-link">Security</a></nav>
+          <h3 style="font-size:1rem;margin:.2rem 0 .6rem">Danger zone</h3>
+          <button type="button" class="btn btn-danger" id="goodDeleteBtn" onclick="openGoodModal()">Delete account</button>
+          <p class="live-msg" id="goodModalMsg" role="status"></p>
+
+          <dialog class="good-dialog" id="goodDialog" aria-labelledby="gdTitle" aria-describedby="gdDesc">
+            <h3 id="gdTitle">Delete your account?</h3>
+            <p id="gdDesc">This permanently deletes your account, 34 projects and all billing history. You can't undo this.</p>
+            <form method="dialog" class="btn-row">
+              <button class="btn btn-secondary" value="cancel" autofocus>Cancel</button>
+              <button class="btn btn-danger" value="delete">Delete account</button>
+            </form>
+          </dialog>
+        </div>
+        <div class="sr-box sr-ignore">
+          <div class="sr-head"><span class="sr-title">Screen reader (simulated)</span></div>
+          <ul class="sr-output"><li class="sr-hint">Focus something in this panel…</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Focus doesn't move into the dialog.</strong> Keyboard and screen reader users are left on the button <em>behind</em> the overlay, and nothing is announced.</li>
+          <li><strong>No focus trap / inert background</strong>: <kbd>Tab</kbd> walks through links hidden behind the overlay.</li>
+          <li><strong>“Yes”, “No” and “×” are <code>div</code>/<code>span</code>s</strong>: a keyboard user can't answer or close the dialog at all.</li>
+          <li><strong><kbd>Esc</kbd> does nothing</strong>.</li>
+          <li><strong>Vague text</strong>: “Are you sure?” about what? “Yes/No” buttons don't say what they do. Low-contrast “×”.</li>
+          <li>Not exposed as a dialog, so screen readers don't know a dialog is open.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Native <code>&lt;dialog&gt;</code> + <code>showModal()</code></strong>: the browser moves focus in, makes the rest of the page inert, and closes on <kbd>Esc</kbd>.</li>
+          <li><strong>Focus starts on the safe action</strong> (“Cancel”, via <code>autofocus</code>), so an accidental <kbd>Enter</kbd> doesn't delete anything.</li>
+          <li><strong>Focus returns to “Delete account”</strong> on close, so users continue from where they were.</li>
+          <li><strong>Labelled and described</strong> (<code>aria-labelledby</code>, <code>aria-describedby</code>): announced as “Delete your account?, dialog, This permanently deletes…”.</li>
+          <li><strong>Specific button labels</strong> (“Delete account” rather than “Yes”) and a specific consequence (“34 projects”).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Operable / Understandable</span>
+      <span class="tag">Focus management</span>
+      <span class="tag">2.1.2 No keyboard trap</span>
+      <span class="tag">2.4.3 Focus order</span>
+      <span class="tag">3.3.4 Error prevention</span>
+      <span class="tag">4.1.2 Name, role, value</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Companion to <a href="README.md">the Accessibility README</a>. The screen reader output here is a simplified simulation;
+  always verify with a real screen reader.
+</footer>
+
+<script>
+// =====================================================================
+// Simulated screen reader: a simplified model of how browsers compute
+// role, accessible name, state and description from the DOM.
+// =====================================================================
+const SYMBOLS = { '★': ' black star ', '☆': ' white star ', '✓': ' check mark ', '✕': ' multiplication x ', '⚠': ' warning ', '×': ' multiplication sign ' };
+function speak(s) {
+  return s.replace(/[★☆✓✕⚠×]/g, c => SYMBOLS[c]).replace(/\s+/g, ' ');
+}
+function isHidden(el) {
+  if (el.getAttribute('aria-hidden') === 'true') return true;
+  const cs = getComputedStyle(el);
+  return cs.display === 'none' || cs.visibility === 'hidden';
+}
+function textOf(node, exclude) {
+  if (!node) return '';
+  if (node.nodeType === 3) return speak(node.textContent);
+  if (node.nodeType !== 1 || node === exclude || isHidden(node)) return '';
+  if (node.tagName === 'IMG') return node.getAttribute('alt') || '';
+  if (node.getAttribute('aria-label')) return node.getAttribute('aria-label');
+  return [...node.childNodes].map(c => textOf(c, exclude)).join(' ').replace(/\s+/g, ' ').trim();
+}
+function roleOf(el) {
+  const r = el.getAttribute('role');
+  if (r) {
+    if (r === 'img') return { key: 'graphic', label: 'graphic' };
+    if (r === 'presentation' || r === 'none' || r === 'status' || r === 'alert') return null;
+    return { key: r, label: r };
+  }
+  const t = el.tagName;
+  if (t === 'BUTTON') return { key: 'button', label: 'button' };
+  if (t === 'A' && el.hasAttribute('href')) return { key: 'link', label: 'link' };
+  if (t === 'INPUT') {
+    if (el.type === 'checkbox') return { key: 'checkbox', label: 'checkbox' };
+    if (el.type === 'radio') return { key: 'radio', label: 'radio button' };
+    if (el.type === 'number') return { key: 'edit', label: 'spin button' };
+    return { key: 'edit', label: 'edit text' };
+  }
+  if (t === 'SELECT') return { key: 'combobox', label: 'combo box' };
+  if (t === 'TEXTAREA') return { key: 'edit', label: 'edit text, multi line' };
+  if (t === 'IMG') return { key: 'graphic', label: 'graphic' };
+  if (t === 'DIALOG') return { key: 'dialog', label: 'dialog' };
+  if (/^H[1-6]$/.test(t)) return { key: 'heading', label: 'heading level ' + t[1] };
+  if (t === 'ARTICLE') return { key: 'article', label: 'article' };
+  if (t === 'NAV') return { key: 'navigation', label: 'navigation landmark' };
+  return null;
+}
+const LEAF = new Set(['button', 'link', 'checkbox', 'radio', 'switch', 'edit', 'combobox', 'graphic', 'heading', 'tab']);
+
+function nameOf(el) {
+  const lb = el.getAttribute('aria-labelledby');
+  if (lb) return lb.split(/\s+/).map(id => textOf(document.getElementById(id))).join(' ').trim();
+  const al = el.getAttribute('aria-label');
+  if (al) return al.trim();
+  if (el.tagName === 'IMG') return el.hasAttribute('alt') ? el.getAttribute('alt') : null; // null = alt missing
+  if (el.labels && el.labels.length) return [...el.labels].map(l => textOf(l, el)).join(' ').trim();
+  const r = roleOf(el);
+  if ((r && ['button', 'link', 'heading', 'switch', 'tab'].includes(r.key)) || el.hasAttribute('tabindex')) {
+    const t = textOf(el);
+    if (t) return t;
+  }
+  if (el.title) return el.title;
+  if (el.placeholder) return el.placeholder;
+  return '';
+}
+function statesOf(el, key) {
+  const s = [];
+  const pressed = el.getAttribute('aria-pressed');
+  if (pressed) s.push(pressed === 'true' ? 'pressed' : 'not pressed');
+  if (key === 'switch') s.push(el.getAttribute('aria-checked') === 'true' ? 'on' : 'off');
+  if (key === 'checkbox' || key === 'radio') s.push((el.getAttribute('aria-checked') ?? String(el.checked)) === 'true' ? 'checked' : 'not checked');
+  const exp = el.getAttribute('aria-expanded');
+  if (exp) s.push(exp === 'true' ? 'expanded' : 'collapsed');
+  if (el.required || el.getAttribute('aria-required') === 'true') s.push('required');
+  if (el.getAttribute('aria-invalid') === 'true') s.push('invalid entry');
+  if (el.disabled || el.getAttribute('aria-disabled') === 'true') s.push('unavailable');
+  if (key === 'edit' && el.value) s.push(el.value);
+  return s;
+}
+function descriptionOf(el) {
+  const d = el.getAttribute('aria-describedby');
+  return d ? d.split(/\s+/).map(id => textOf(document.getElementById(id))).join(' ').trim() : '';
+}
+// Returns { text, warn } for one element.
+function describe(el) {
+  const r = roleOf(el);
+  let name = nameOf(el);
+  let warn = '';
+  if (r && r.key === 'graphic' && name === null) {
+    name = el.dataset.file || (el.getAttribute('src') || '').split('/').pop();
+    warn = 'no alt attribute, so the file name is read';
+  }
+  if (!name && r && LEAF.has(r.key)) warn = 'no accessible name';
+  if (!r) warn = 'no role: users aren’t told this is interactive';
+  const parts = [name, r && r.label, ...(r ? statesOf(el, r.key) : []), descriptionOf(el)].filter(Boolean);
+  return { text: parts.join(', ') || '(blank)', warn };
+}
+// Linear "browse mode" reading of a container, like pressing Down arrow repeatedly.
+function linearize(root) {
+  const out = [];
+  (function walk(node) {
+    if (node.nodeType === 3) { const t = speak(node.textContent).trim(); if (t) out.push({ text: t }); return; }
+    if (node.nodeType !== 1 || isHidden(node) || node.classList.contains('sr-ignore')) return;
+    if (node.tagName === 'IMG' && node.getAttribute('alt') === '') return;   // decorative: skipped
+    const r = roleOf(node);
+    if (r && LEAF.has(r.key)) { out.push(describe(node)); return; }
+    [...node.childNodes].forEach(walk);
+  })(root);
+  return out;
+}
+
+function srSay(panel, items, { clear = true } = {}) {
+  const ul = panel.querySelector('.sr-output');
+  if (clear) ul.innerHTML = '';
+  for (const it of items) {
+    const li = document.createElement('li');
+    if (it.hint) { li.className = 'sr-hint'; li.textContent = it.text; }
+    else {
+      const span = document.createElement('span');
+      span.textContent = it.text;
+      if (it.live) span.className = 'live';
+      li.appendChild(span);
+      if (it.warn) {
+        const w = document.createElement('span');
+        w.className = 'warn';
+        w.textContent = '  ← ' + it.warn;
+        li.appendChild(w);
+      }
+    }
+    ul.appendChild(li);
+  }
+  ul.scrollTop = ul.scrollHeight;
+}
+
+document.querySelectorAll('[data-sr]').forEach(panel => {
+  // Announce focused elements.
+  panel.addEventListener('focusin', e => {
+    if (e.target.closest('.sr-ignore')) return;
+    const items = [];
+    const dlg = e.target.closest('dialog, [role=dialog]');
+    if (dlg && !(e.relatedTarget && dlg.contains(e.relatedTarget))) items.push(describe(dlg));
+    items.push(describe(e.target));
+    srSay(panel, items);
+  });
+  // Announce live region updates.
+  panel.querySelectorAll('[role=status], [role=alert], [aria-live]').forEach(region => {
+    new MutationObserver(() => {
+      const t = textOf(region);
+      if (t) srSay(panel, [{ text: t, live: true, warn: 'live region: announced without moving focus' }], { clear: false });
+    }).observe(region, { childList: true, characterData: true, subtree: true });
+  });
+  // "Read panel" and "Links list" buttons.
+  panel.querySelectorAll('[data-sr-action]').forEach(btn => btn.addEventListener('click', () => {
+    const content = [...panel.children].filter(c => !c.classList.contains('sr-ignore') && !c.classList.contains('badge'));
+    if (btn.dataset.srAction === 'read') {
+      srSay(panel, content.flatMap(linearize));
+    } else {
+      const links = content.flatMap(c => [...c.querySelectorAll('a[href]')]);
+      srSay(panel, [{ hint: true, text: `Links list (${links.length} links):` },
+        ...links.map((a, i) => ({ text: `${i + 1}. ${nameOf(a)}`, warn: /^(click here|read more|here|more)$/i.test(nameOf(a)) ? 'meaningless out of context' : '' }))]);
+    }
+  }));
+});
+
+// Demo links shouldn't jump around the page.
+document.querySelectorAll('.demo-link').forEach(a => a.addEventListener('click', e => e.preventDefault()));
+
+// =====================================================================
+// Example 1: contrast
+// =====================================================================
+function parseColor(s) {
+  const m = s.match(/rgba?\(([^)]+)\)/);
+  if (!m) return { r: 255, g: 255, b: 255, a: 1 };
+  const p = m[1].split(/[\s,\/]+/).filter(Boolean).map(Number);
+  return { r: p[0], g: p[1], b: p[2], a: p[3] ?? 1 };
+}
+function hexToRgb(hex) {
+  let h = hex.trim().replace('#', '');
+  if (h.length === 3) h = [...h].map(c => c + c).join('');
+  if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+}
+function luminance({ r, g, b }) {
+  const f = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function contrast(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+function effectiveBg(el) {
+  for (; el; el = el.parentElement) {
+    const c = parseColor(getComputedStyle(el).backgroundColor);
+    if (c.a > 0) return c;
+  }
+  return { r: 255, g: 255, b: 255 };
+}
+function isLargeText(el) {
+  const cs = getComputedStyle(el);
+  const size = parseFloat(cs.fontSize), weight = parseInt(cs.fontWeight, 10);
+  return size >= 24 || (size >= 18.66 && weight >= 700);
+}
+function addChip(el, ratio, needed, prefix = '') {
+  const chip = document.createElement('span');
+  const pass = ratio >= needed;
+  chip.className = 'chip ' + (pass ? 'pass' : 'fail');
+  chip.textContent = `${prefix}${ratio.toFixed(1)}:1 ${pass ? '✓' : '✗'}`;
+  chip.setAttribute('aria-hidden', 'true');
+  el.insertAdjacentElement('afterend', chip);
+}
+document.querySelectorAll('[data-contrast]').forEach(el => {
+  const ratio = contrast(parseColor(getComputedStyle(el).color), effectiveBg(el));
+  addChip(el, ratio, isLargeText(el) ? 3 : 4.5);
+});
+document.querySelectorAll('[data-contrast-link]').forEach(a => {
+  const underlined = getComputedStyle(a).textDecorationLine.includes('underline');
+  const vsText = contrast(parseColor(getComputedStyle(a).color), parseColor(getComputedStyle(a.parentElement).color));
+  const chip = document.createElement('span');
+  chip.className = 'chip ' + (underlined ? 'pass' : 'fail');
+  chip.textContent = underlined ? 'underlined ✓' : `vs text ${vsText.toFixed(1)}:1, no underline ✗`;
+  chip.setAttribute('aria-hidden', 'true');
+  a.insertAdjacentElement('afterend', chip);
+});
+
+document.querySelectorAll('input[name=sim]').forEach(radio => radio.addEventListener('change', () => {
+  const box = document.getElementById('ex1compare');
+  box.className = 'compare' + (radio.value ? ' sim-' + radio.value : '');
+}));
+
+// Contrast checker
+const fgColor = document.getElementById('fgColor'), fgText = document.getElementById('fgText');
+const bgColor = document.getElementById('bgColor'), bgText = document.getElementById('bgText');
+function updateChecker() {
+  const fg = hexToRgb(fgText.value), bg = hexToRgb(bgText.value);
+  const out = document.getElementById('ckResults');
+  if (!fg || !bg) { out.textContent = 'Enter colors as hex, like #1f2933.'; return; }
+  const preview = document.getElementById('ckPreview');
+  preview.style.color = fgText.value; preview.style.background = bgText.value;
+  const r = contrast(fg, bg);
+  const res = (label, min) => `<span class="res ${r >= min ? 'pass' : 'fail'}">${r >= min ? '✓ Pass' : '✗ Fail'}: ${label}</span>`;
+  out.innerHTML = `<span class="ratio">${r.toFixed(2)}:1</span>` +
+    res('AA normal text (4.5)', 4.5) + res('AA large text / UI (3)', 3) + res('AAA normal text (7)', 7) + res('AAA large text (4.5)', 4.5);
+}
+function syncPair(picker, text) {
+  picker.addEventListener('input', () => { text.value = picker.value; updateChecker(); });
+  text.addEventListener('input', () => { const c = hexToRgb(text.value); if (c) picker.value = '#' + [c.r, c.g, c.b].map(v => v.toString(16).padStart(2, '0')).join(''); updateChecker(); });
+}
+syncPair(fgColor, fgText); syncPair(bgColor, bgText);
+updateChecker();
+
+// =====================================================================
+// Example 2: keyboard
+// =====================================================================
+function badSave() {
+  const msg = document.getElementById('badSaveMsg');
+  msg.textContent = 'Saved';
+  setTimeout(() => { msg.textContent = ''; }, 2000);
+}
+function resetBadKbd() {
+  document.querySelectorAll('#kbdBad .fake-toggle').forEach((t, i) => t.classList.toggle('on', i < 2));
+  document.getElementById('badSaveMsg').textContent = '';
+}
+document.querySelectorAll('#kbdGood .switch').forEach(sw => sw.addEventListener('click', () => {
+  const on = sw.getAttribute('aria-checked') !== 'true';
+  sw.setAttribute('aria-checked', String(on));
+  sw.previousElementSibling.textContent = on ? 'On' : 'Off';
+  // State changes are announced because focus stays on the switch.
+  srSay(sw.closest('[data-sr]'), [describe(sw)]);
+}));
+function goodSave() {
+  const on = [...document.querySelectorAll('#kbdGood .switch')].filter(s => s.getAttribute('aria-checked') === 'true').length;
+  document.getElementById('goodSaveMsg').textContent = `Settings saved. ${on} of 3 notifications on.`;
+}
+function resetGoodKbd() {
+  document.querySelectorAll('#kbdGood .switch').forEach((sw, i) => {
+    sw.setAttribute('aria-checked', String(i < 2));
+    sw.previousElementSibling.textContent = i < 2 ? 'On' : 'Off';
+  });
+  document.getElementById('goodSaveMsg').textContent = '';
+}
+
+// =====================================================================
+// Example 3: screen reader names
+// =====================================================================
+let goodCartCount = 0;
+function badAddToCart() {
+  const m = document.getElementById('badCartMsg');
+  m.textContent = '✓ Added';
+  setTimeout(() => { m.textContent = ''; }, 2000);
+}
+function goodAddToCart() {
+  goodCartCount += Number(document.getElementById('qtyGood').value) || 1;
+  document.getElementById('goodCartMsg').textContent =
+    `Added to cart. Cart has ${goodCartCount} item${goodCartCount === 1 ? '' : 's'}.`;
+}
+function toggleWish(btn) {
+  btn.setAttribute('aria-pressed', String(btn.getAttribute('aria-pressed') !== 'true'));
+  srSay(btn.closest('[data-sr]'), [describe(btn)]);
+}
+
+// =====================================================================
+// Example 4: modal dialog
+// =====================================================================
+function openBadModal() {
+  document.getElementById('badOverlay').classList.add('open');
+  document.getElementById('badModalMsg').textContent = '';
+  // Focus is NOT moved, so a screen reader says nothing about the dialog.
+  srSay(document.getElementById('badOverlay').closest('[data-sr]'), [
+    { hint: true, text: '(silence: focus is still on “Delete account” behind the overlay, and nothing announces the dialog)' }]);
+}
+function closeBadModal() {
+  document.getElementById('badOverlay').classList.remove('open');
+}
+function badConfirm() {
+  closeBadModal();
+  document.getElementById('badModalMsg').textContent = 'Account deleted.';
+}
+
+const goodDialog = document.getElementById('goodDialog');
+const goodDeleteBtn = document.getElementById('goodDeleteBtn');
+function openGoodModal() {
+  document.getElementById('goodModalMsg').textContent = '';
+  goodDialog.showModal();
+}
+goodDialog.addEventListener('close', () => {
+  goodDeleteBtn.focus();   // modern browsers do this already; explicit for older ones
+  document.getElementById('goodModalMsg').textContent =
+    goodDialog.returnValue === 'delete' ? 'Account deleted (demo only).' : 'Cancelled. Your account was not deleted.';
+  goodDialog.returnValue = '';
+});
+</script>
+</body>
+</html>

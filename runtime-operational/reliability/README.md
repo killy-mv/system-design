@@ -28,8 +28,10 @@ Related: [Availability](../availability/README.md) (is it up?), [Scalability](..
 17. [Approaches by system type](#17-approaches-by-system-type)
 18. [Trade-offs](#18-trade-offs)
 19. [Anti-patterns](#19-anti-patterns)
-20. [Checklist](#20-checklist)
-21. [Further reading](#21-further-reading)
+20. [Real-world incidents](#20-real-world-incidents)
+21. [Checklist](#21-checklist)
+22. [Exercises](#22-exercises)
+23. [Further reading](#23-further-reading)
 
 ---
 
@@ -69,7 +71,38 @@ Availability vs reliability example:
 | **Defect escape rate** | Bugs found in production vs before |
 | **Data loss incidents / corruption incidents** | Should be zero; track any |
 
-**Bathtub curve**: hardware fails more often early (infant mortality) and late (wear-out). Disks have an annual failure rate (AFR) of ~0.5–2% → in a cluster of 10,000 disks, several die every day. **At scale, failure is normal**, not exceptional.
+**Bathtub curve**: hardware fails more often early (infant mortality) and late (wear-out). Disks have an annual failure rate (AFR) of ~0.5–2% → in a fleet of 100,000 disks, several die every day. **At scale, failure is normal**, not exceptional.
+
+### 2.1 Worked example: failure at scale
+
+With a constant failure rate, the probability a component survives time `t` is:
+
+```
+R(t) = e^(−t / MTBF)
+```
+
+One server with an MTBF of 3 years:
+
+```
+R(1 year) = e^(−1/3) ≈ 0.72   →  28% chance it fails within a year
+```
+
+Feels safe for one machine. Now run **1,000** of them:
+
+```
+Expected failures per year = 1,000 / 3 ≈ 333  →  about one per day
+P(no failure today) = e^(−1,000 / (3 × 365)) ≈ 0.40
+```
+
+On any given day there's a **60% chance something in the fleet breaks**. The design question is not "how do we prevent failure?" but "what happens to in-flight requests and data **every time** a node dies?"
+
+The same math explains why **independent** replicas are so effective for durability. If a disk has a 2% AFR and a failed replica is re-copied within 1 day:
+
+```
+P(a 2nd replica dies during the 1-day repair window) ≈ 2 × (0.02 / 365) ≈ 0.011%
+```
+
+Fast **re-replication** shrinks the window where you're one failure away from data loss. That's why storage systems obsess over repair speed.
 
 ---
 
@@ -419,6 +452,40 @@ An operation is **idempotent** if performing it multiple times has the same effe
 - **State machines**: transitions only from valid states (`PENDING → PAID` can happen once; a second "pay" sees `PAID` and returns success without charging).
 - **Convert deltas to absolutes** when possible, or record each delta with a unique ID.
 
+### 11.3 Worked example: the double charge
+
+A checkout service calls a payment provider with a 2 s timeout and retries once.
+
+**Without idempotency:**
+
+```
+t=0.0  Checkout → Provider: POST /charges {amount: 50}
+t=1.8  Provider charges the card, sends 200 OK
+t=2.0  Checkout times out (the response is still in flight) → "failed?"
+t=2.1  Checkout → Provider: POST /charges {amount: 50}      ← retry
+t=2.4  Provider charges the card AGAIN → 200 OK
+       Customer is charged 100.
+```
+
+The timeout was case 3 from §3.3: *processed, but the response was lost*. The client can't tell this apart from "never processed".
+
+**With an idempotency key:**
+
+```
+t=0.0  POST /charges  Idempotency-Key: ord_123-pay-1  {amount: 50}
+t=1.8  Provider stores (ord_123-pay-1 → charge ch_9) and charges once
+t=2.0  Checkout times out
+t=2.1  POST /charges  Idempotency-Key: ord_123-pay-1  {amount: 50}   ← retry
+t=2.2  Provider finds the key → returns the stored result: charge ch_9
+       Customer is charged 50.
+```
+
+Details that matter:
+- Derive the key from the **business operation** (order ID + attempt purpose), not a new random UUID per HTTP call, or a retry after a client crash gets a fresh key.
+- Same key with a **different body** → reject (`422`), it's a client bug.
+- Two requests with the same key arriving **concurrently** → the second waits or gets `409` until the first finishes.
+- Record the payment as `PENDING` in your own DB **before** calling the provider, so a crash mid-call leaves a row that a recovery job can resolve (query the provider by key).
+
 ---
 
 ## 12. Conflict resolution in replicated data
@@ -652,7 +719,25 @@ The key judgement: **which data must be strongly correct, and which can be event
 
 ---
 
-## 20. Checklist
+## 20. Real-world incidents
+
+Reliability failures are often worse than downtime: the system keeps running and **does the wrong thing**.
+
+| Incident | What happened | Lesson |
+|---|---|---|
+| **Amazon S3 (Jul 2008)** | A single corrupted bit in internal server-state messages spread through S3's gossip protocol. Servers couldn't agree on system state, and S3 was down for about 8 hours while engineers cleared the state. | Checksum **everything**, including internal control messages (§13.2). |
+| **Knight Capital (Aug 2012)** | A new release reached only 7 of 8 servers. The 8th still had old, dead code that a **reused feature flag** switched back on. It sent millions of erroneous orders and lost about $440M in 45 minutes. The company didn't survive independently. | Verify that deploys complete. Never reuse flags. Delete dead code. Have a kill switch. |
+| **Cloudflare "Cloudbleed" (Feb 2017)** | A buffer overrun in an HTML parser made edge servers return chunks of **other customers' memory** (cookies, tokens) inside responses. Some of it was cached by search engines. | "Available but wrong" can be the worst failure. Memory safety and fuzzing (§16). |
+| **Cloudflare leap second (Jan 2017)** | The DNS software computed a duration from wall-clock time. During the leap second, time appeared to go backwards, the duration was negative, and the code panicked. Some DNS lookups failed. | Use monotonic clocks for durations (§9.1). |
+| **PostgreSQL "fsyncgate" (2018)** | Developers found that after a failed `fsync`, Linux could drop the dirty pages and a retried `fsync` would report **success**. Postgres assumed retrying was safe and could silently lose data. Postgres now panics on fsync failure. | Durability depends on exact OS semantics. Treat an fsync error as fatal (§4.1). |
+| **Atlassian (Apr 2022)** | A script meant to delete a legacy app was given **site IDs instead of app IDs** and deleted the cloud sites of about 400 customers. Some were down for up to 2 weeks, because backups could restore everything but not **one tenant** quickly. | Guardrails and soft deletes for destructive scripts (§15). Test **partial** restores, not just full ones. |
+| **UK Post Office Horizon (1999–2015)** | Bugs in the Horizon accounting system showed shortfalls at branches. The system's output was trusted over people, and hundreds of sub-postmasters were wrongly prosecuted for theft and fraud. | Reconciliation, audit trails, and never treating system output as infallible (§13). |
+
+Common threads: **unvalidated assumptions** (about the OS, about clocks, about which servers got the deploy), **missing checksums/validation**, and **destructive operations without guardrails**.
+
+---
+
+## 21. Checklist
 
 **Data durability**
 - [ ] Writes acknowledged only after durable (fsync / replicated per RPO)
@@ -688,7 +773,21 @@ The key judgement: **which data must be strongly correct, and which can be event
 
 ---
 
-## 21. Further reading
+## 22. Exercises
+
+1. **Failure at scale.** Your service runs on 200 VMs with an MTBF of 2 years each. How many failures per year should you expect? What's the probability of at least one failure during a 1-hour deploy? (§2.1)
+2. **Lost update.** Two requests run `SELECT stock FROM items WHERE id = 1` (both read 5), then each runs `UPDATE items SET stock = 4`. Under which isolation levels does this lose an update? Fix it 3 different ways (§6.4).
+3. **Write skew.** A hospital rule: at least one doctor must be on call. Alice and Bob are both on call, and both click "go off call" at the same moment. Show how snapshot isolation lets both succeed. Fix it with `SELECT ... FOR UPDATE`, then with serializable isolation.
+4. **Design an idempotent API.** Write the table schema and the request-handling steps for `POST /payments` with an `Idempotency-Key` header. Handle: a retry after success, a retry while the first request is still running, the same key with a different amount, and a server crash after charging but before saving the result (§11.3).
+5. **Crash points.** List every point where a crash can happen in `db.save(order); queue.publish(event)` and what state each one leaves behind. Do the same for the outbox version. Which side must now be idempotent? (§7.3)
+6. **Consistency per data type.** For a social app, choose strong, read-your-writes or eventual consistency for: username registration, likes count, privacy setting, follower list, direct messages, the "last seen" timestamp. Justify each.
+7. **Saga design.** Book a trip: flight + hotel + car + payment. Write the steps and the compensation for each. Which step can't really be compensated? Where do you put it in the order, and why?
+8. **Clock skew.** Two servers use last-write-wins with wall-clock timestamps, and server B's clock is 300 ms behind. A user updates their address on A, then 100 ms later corrects it on B. Which version survives? Propose two fixes (§9, §12).
+9. **Read an incident** from §20 in full. Identify which fault type from §3 started it, why it wasn't caught earlier, and which items in the §21 checklist would have helped.
+
+---
+
+## 23. Further reading
 
 - *Designing Data-Intensive Applications* (Kleppmann) — ch. 1 (reliability), 7 (transactions), 8 (distributed systems trouble), 9 (consistency & consensus), 11–12 (streams, correctness) — **the** book for this topic
 - *Database Internals* (Alex Petrov) — storage engines, replication, consensus

@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Responsiveness: Bad vs Good — 4 Interactive Examples</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #52606d;
+    --border: #d9dee5;
+    --bad: #b71c1c;
+    --bad-bg: #fdecea;
+    --good: #1b5e20;
+    --good-bg: #e8f5e9;
+    --primary: #1a5fd0;
+    --primary-dark: #134aa3;
+    --skel: #e3e7ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+  header {
+    background: #1f2933;
+    color: #fff;
+    padding: 2rem 1.5rem;
+  }
+  header h1 { margin: 0 0 .5rem; font-size: 1.8rem; }
+  header p { margin: 0 0 .4rem; color: #d5dbe1; max-width: 62rem; }
+  header a { color: #b5d3ff; }
+  main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
+  nav.toc { margin-bottom: 2rem; }
+  nav.toc a { color: var(--primary); margin-right: 1.25rem; }
+
+  section.example {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  section.example > h2 { margin-top: 0; }
+  .scenario { color: var(--muted); margin-top: -.5rem; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center;
+    background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; padding: .6rem .9rem; margin-top: 1rem;
+  }
+  .controls label { display: inline-flex; gap: .4rem; align-items: center; }
+  .controls select { font: inherit; padding: .25rem .4rem; }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin: 1.25rem 0;
+  }
+  @media (max-width: 800px) { .compare { grid-template-columns: 1fr; } }
+
+  .panel {
+    border-radius: 10px;
+    padding: 1rem 1.25rem 1.25rem;
+    border: 2px solid;
+    position: relative;
+    min-width: 0;
+  }
+  .panel.bad  { border-color: var(--bad);  background: #fffafa; }
+  .panel.good { border-color: var(--good); background: #fafffa; }
+  .badge {
+    display: inline-block;
+    font-weight: 700;
+    font-size: .8rem;
+    letter-spacing: .05em;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    margin: 0 0 .75rem;
+  }
+  .bad  .badge { background: var(--bad-bg);  color: var(--bad); }
+  .good .badge { background: var(--good-bg); color: var(--good); }
+  .reset {
+    position: absolute; top: .9rem; right: 1rem;
+    font: inherit; font-size: .85rem; background: none; border: none;
+    color: var(--muted); text-decoration: underline; cursor: pointer;
+  }
+
+  .analysis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 800px) { .analysis { grid-template-columns: 1fr; } }
+  .analysis h3 { margin: 0 0 .5rem; font-size: 1rem; }
+  .analysis ul { margin: 0; padding-left: 1.2rem; }
+  .analysis li { margin-bottom: .35rem; }
+  .problems h3 { color: var(--bad); }
+  .fixes h3 { color: var(--good); }
+  .principles {
+    margin-top: 1rem;
+    font-size: .9rem;
+    color: var(--muted);
+    border-top: 1px dashed var(--border);
+    padding-top: .75rem;
+  }
+  .tag {
+    display: inline-block;
+    background: #eef2f7;
+    border-radius: 4px;
+    padding: .05rem .45rem;
+    margin: .15rem .2rem .15rem 0;
+    font-size: .8rem;
+    color: #334155;
+  }
+
+  /* ---------- Shared controls ---------- */
+  .demo input[type=text], .demo input[type=search], .demo textarea {
+    width: 100%;
+    padding: .55rem .7rem;
+    font: inherit;
+    border: 1px solid #8a96a3;
+    border-radius: 6px;
+  }
+  .btn {
+    font: inherit;
+    padding: .55rem 1.1rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    min-height: 40px;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary[disabled] { background: #6c8fcf; cursor: default; }
+  .btn-secondary { background: #fff; color: var(--text); border-color: #8a96a3; }
+  .btn-link { background: none; border: none; color: var(--primary); text-decoration: underline; cursor: pointer; font: inherit; padding: 0 .2rem; }
+
+  .net {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: .78rem;
+    background: #1f2933; color: #e4e7eb;
+    border-radius: 6px; padding: .5rem .7rem; margin-top: 1rem;
+    height: 7.5rem; overflow-y: auto;
+  }
+  .net .title { color: #9aa5b1; }
+  .net .ok { color: #a5d6a7; }
+  .net .err { color: #ffb4a9; }
+  .net .note { color: #ffe08a; }
+
+  .meter { font-size: .9rem; margin-top: .6rem; padding: .4rem .6rem; border-radius: 6px; background: #f1f4f8; }
+  .meter strong.bad-num { color: var(--bad); }
+  .meter strong.good-num { color: var(--good); }
+
+  .spinner {
+    display: inline-block; width: .95em; height: .95em; vertical-align: -.12em;
+    border: 2px solid rgba(0,0,0,.2); border-top-color: var(--primary); border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  .spinner.light { border-color: rgba(255,255,255,.45); border-top-color: #fff; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-line { min-height: 1.5rem; margin-top: .5rem; font-weight: 600; font-size: .92rem; }
+  .status-line.ok { color: var(--good); }
+  .status-line.err { color: var(--bad); }
+
+  /* ---------- Example 1: to-do ---------- */
+  .todo-form { display: flex; gap: .5rem; }
+  .todo-list { list-style: none; padding: 0; margin: .8rem 0 0; }
+  .todo-list li {
+    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    padding: .45rem .3rem; border-bottom: 1px solid var(--border); min-height: 2.6rem;
+  }
+  .todo-list label { display: inline-flex; gap: .5rem; align-items: center; flex: 1; min-width: 8rem; }
+  .todo-list input[type=checkbox] { width: 1.15rem; height: 1.15rem; }
+  .todo-list .done span.txt { text-decoration: line-through; color: var(--muted); }
+  .todo-list .pending span.txt { color: var(--muted); }
+  .todo-list .state { font-size: .8rem; color: var(--muted); display: inline-flex; align-items: center; gap: .3rem; }
+  .todo-list .failed { background: var(--bad-bg); }
+  .todo-list .failed .state { color: var(--bad); font-weight: 600; }
+  .tiny-err { color: #e57373; font-size: .72rem; min-height: 1rem; }
+
+  /* ---------- Example 2: feed ---------- */
+  .feed { min-height: 4rem; }
+  .post {
+    border: 1px solid var(--border); border-radius: 8px; padding: .6rem; margin-bottom: .6rem; background: #fff;
+  }
+  .post .img { width: 100%; border-radius: 6px; margin-bottom: .5rem; }
+  .post h4 { margin: 0; font-size: 1rem; line-height: 1.4rem; height: 1.4rem; overflow: hidden; }
+  .post p { margin: .2rem 0 .4rem; font-size: .9rem; line-height: 1.5; height: 3em; overflow: hidden; }
+  .post .read { display: block; height: 36px; min-height: 36px; padding: 0 .9rem; }
+  .bad-feed .post .img { height: 0; }               /* no reserved space */
+  .good-feed .post .img { height: 82px; background: var(--skel); }   /* reserved space */
+  .ad {
+    display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+    border-radius: 8px; padding: 0 .8rem; margin-bottom: .6rem; height: 56px;
+    background: #fff4d6; border: 1px solid #f0d48a; font-size: .9rem;
+  }
+  .ad.placeholder { background: var(--skel); border-color: var(--skel); color: var(--muted); }
+  .center-spinner { text-align: center; color: var(--muted); padding: 1.2rem 0; }
+  .skel { background: var(--skel); border-radius: 4px; position: relative; overflow: hidden; }
+  .skel::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+    transform: translateX(-100%); animation: shimmer 1.3s infinite;
+  }
+  @keyframes shimmer { to { transform: translateX(100%); } }
+  .skel-line { height: 1rem; margin: .2rem 0; }
+  .updating { font-size: .85rem; color: var(--muted); min-height: 1.4rem; }
+  .feed-toolbar { display: flex; align-items: center; gap: .8rem; margin-bottom: .7rem; flex-wrap: wrap; }
+
+  /* ---------- Example 3: search ---------- */
+  .results { list-style: none; padding: 0; margin: .6rem 0 0; min-height: 10rem; transition: opacity .15s; }
+  .results li { padding: .2rem .3rem; border-bottom: 1px solid #eef0f3; font-size: .92rem; }
+  .results.stale { opacity: .5; }
+  .results-head { font-size: .85rem; color: var(--muted); margin-top: .5rem; display: flex; justify-content: space-between; gap: .5rem; flex-wrap: wrap; min-height: 1.4rem; }
+  .match-ok { color: var(--good); font-weight: 600; }
+  .match-bad { color: var(--bad); font-weight: 600; }
+
+  /* ---------- Example 4: export ---------- */
+  .export-body { position: relative; }
+  .blocker {
+    position: absolute; inset: -.3rem; background: rgba(255,255,255,.85); border-radius: 8px;
+    display: none; align-items: center; justify-content: center; flex-direction: column; gap: .5rem;
+    font-weight: 600; color: var(--muted);
+  }
+  .blocker.open { display: flex; }
+  .blocker .spinner { width: 2rem; height: 2rem; border-width: 3px; }
+  .job {
+    border: 1px solid var(--border); border-radius: 8px; padding: .7rem .9rem; margin-top: .8rem; background: #fff;
+  }
+  .job-top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .bar { height: .7rem; background: #e3e7ec; border-radius: 999px; overflow: hidden; margin: .5rem 0 .3rem; }
+  .bar > div { height: 100%; width: 0; background: var(--primary); transition: width .3s; }
+  .steps { list-style: none; padding: 0; margin: .3rem 0 0; font-size: .85rem; display: flex; gap: .9rem; flex-wrap: wrap; color: var(--muted); }
+  .steps li.active { color: var(--primary); font-weight: 700; }
+  .steps li.done { color: var(--good); }
+  .notes { margin-top: .8rem; }
+  .notes label { font-weight: 600; font-size: .9rem; display: block; margin-bottom: .2rem; }
+  .toast {
+    position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%);
+    background: #1f2933; color: #fff; border-radius: 8px; padding: .55rem .9rem;
+    display: none; gap: .8rem; align-items: center; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.25);
+  }
+  .toast.open { display: flex; }
+  .toast a { color: #b5d3ff; font-weight: 700; }
+
+  footer { text-align: center; color: var(--muted); font-size: .9rem; padding: 2rem 1rem 3rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation-duration: 2.4s; }
+    .skel::after { animation: none; }
+    .bar > div, .results { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Responsiveness: Bad vs Good</h1>
+  <p>
+    Four interactive examples of UIs that feel slow or broken, and how to fix them.
+    In every example <strong>both sides talk to the same simulated server with the same latency</strong>.
+    The only difference is the UI design. The dark boxes show the simulated network traffic.
+  </p>
+  <p>Notes: <a href="README.md">Responsiveness README</a>.</p>
+</header>
+
+<main>
+  <nav class="toc" aria-label="Examples">
+    <strong>Examples:</strong>
+    <a href="#ex1">1. Optimistic UI</a>
+    <a href="#ex2">2. Loading &amp; layout shift</a>
+    <a href="#ex3">3. Search &amp; frozen input</a>
+    <a href="#ex4">4. Long operations</a>
+  </nav>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 1: OPTIMISTIC UI                                          -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex1" aria-labelledby="ex1-title">
+    <h2 id="ex1-title">1. The to-do list that waits for the server</h2>
+    <p class="scenario">
+      Try it: add three tasks quickly and tick one off, in both lists. Then turn on “Server fails” and add another task.
+    </p>
+    <div class="controls">
+      <label>Server latency
+        <select id="lat1">
+          <option value="150">Fast (150 ms)</option>
+          <option value="1200" selected>Slow (1.2 s)</option>
+          <option value="3000">Very slow (3 s)</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="fail1"> Server fails every request</label>
+    </div>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <button class="reset" type="button" onclick="resetTodos('bad')">reset</button>
+        <div class="demo">
+          <div class="tiny-err" id="badTodoErr"></div>
+          <form class="todo-form" id="badTodoForm">
+            <input type="text" id="badTodoInput" aria-label="New task (bad version)" placeholder="New task" autocomplete="off">
+            <button class="btn btn-primary" type="submit">Add</button>
+          </form>
+          <ul class="todo-list" id="badTodos"></ul>
+          <div class="net" id="net1bad"><div class="title">// network</div></div>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <button class="reset" type="button" onclick="resetTodos('good')">reset</button>
+        <div class="demo">
+          <form class="todo-form" id="goodTodoForm">
+            <input type="text" id="goodTodoInput" aria-label="New task" placeholder="New task" autocomplete="off">
+            <button class="btn btn-primary" type="submit">Add task</button>
+          </form>
+          <ul class="todo-list" id="goodTodos"></ul>
+          <p class="status-line err" id="goodTodoStatus" role="status"></p>
+          <div class="net" id="net1good"><div class="title">// network</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Nothing happens on click</strong> until the server answers. No pressed state, no pending item, so users click again and get <strong>duplicate tasks</strong>.</li>
+          <li><strong>The checkbox refuses to tick</strong> until the round trip finishes; it feels broken.</li>
+          <li>The input stays full, so you can't type the next task until the first one is saved.</li>
+          <li><strong>On failure your text is thrown away</strong> and a tiny “Error” appears far from where you were looking.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Optimistic update</strong>: the task appears instantly (marked “Saving…”) and the input clears and keeps focus, so you can add the next one straight away.</li>
+          <li><strong>Checkbox ticks instantly</strong>; it rolls back with a message if the server rejects it.</li>
+          <li><strong>Failed tasks are kept</strong> and marked “Not saved” with <em>Retry</em> and <em>Remove</em>. Nothing the user wrote is lost.</li>
+          <li><strong>Client-generated ID used as an idempotency key</strong>: retries can't create duplicates on the server.</li>
+          <li>Failures announced in a <code>role="status"</code> live region.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Optimistic UI</span>
+      <span class="tag">Feedback &lt; 100 ms</span>
+      <span class="tag">Visible rollback</span>
+      <span class="tag">Idempotency keys</span>
+      <span class="tag">Client-generated IDs</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 2: LOADING & LAYOUT SHIFT                                 -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex2" aria-labelledby="ex2-title">
+    <h2 id="ex2-title">2. The feed that loads blank, then jumps under your finger</h2>
+    <p class="scenario">
+      Try it: press “Load feed” on both sides, and as soon as posts appear, try to click “Read” on the first post.
+      Then press it again (a reload).
+      Server timing for both sides: feed data 1.5 s, images and ad 2.3 s.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <div class="demo">
+          <div class="feed-toolbar">
+            <button class="btn btn-secondary" type="button" onclick="loadBadFeed()">Load feed</button>
+          </div>
+          <div class="feed bad-feed" id="badFeed"></div>
+          <p class="status-line" id="badFeedStatus"></p>
+          <div class="meter" id="badJump">Layout shift: press “Load feed”.</div>
+          <div class="net" id="net2bad"><div class="title">// network</div></div>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <div class="demo">
+          <div class="feed-toolbar">
+            <button class="btn btn-secondary" type="button" onclick="loadGoodFeed()">Load feed</button>
+            <span class="updating" id="goodUpdating"></span>
+          </div>
+          <div class="feed good-feed" id="goodFeed" aria-live="off"></div>
+          <p class="status-line" id="goodFeedStatus" role="status"></p>
+          <div class="meter" id="goodJump">Layout shift: press “Load feed”.</div>
+          <div class="net" id="net2good"><div class="title">// network</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Blank area + spinner</strong> for the whole wait: nothing to look at and no idea what's coming.</li>
+          <li><strong>Images have no reserved space</strong>, so when they load, every post jumps down.</li>
+          <li><strong>An ad is injected at the top</strong> after content appeared, pushing everything down. Aim for “Read” and you hit “Shop now”.</li>
+          <li><strong>Reload throws away what you already had</strong> and shows the blank spinner again.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Skeleton screen instantly</strong>, with exactly the same dimensions as the real posts.</li>
+          <li><strong>Progressive rendering</strong>: text appears as soon as it arrives (1.5 s), images fill <strong>reserved boxes</strong> later.</li>
+          <li><strong>Ad slot reserved</strong> from the start, so nothing moves: measured shift is 0 px.</li>
+          <li><strong>Stale-while-revalidate</strong>: reload shows cached posts immediately with a small “Updating…” note.</li>
+          <li><code>aria-busy</code> while loading and a polite “Feed loaded” announcement.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Skeleton screens</span>
+      <span class="tag">Progressive rendering</span>
+      <span class="tag">CLS: reserve space</span>
+      <span class="tag">Stale-while-revalidate</span>
+      <span class="tag">Occupied waits feel shorter</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 3: SEARCH                                                 -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex3" aria-labelledby="ex3-title">
+    <h2 id="ex3-title">3. The search box that freezes and shows the wrong results</h2>
+    <p class="scenario">
+      Try it: type <code>pineapple</code> quickly in both boxes. Watch how fast your letters appear, the request count, and
+      which query the final results are actually for. The simulated server is <em>slower for shorter queries</em> (they
+      match more items), which is realistic.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <button class="reset" type="button" onclick="resetSearch('bad')">reset</button>
+        <div class="demo">
+          <input type="search" id="badSearch" aria-label="Search fruit (bad version)" placeholder="Search fruit…" autocomplete="off">
+          <div class="meter" id="badDelay">Keystroke → screen: type to measure.</div>
+          <div class="results-head"><span id="badCount"></span><span id="badMatch"></span></div>
+          <ul class="results" id="badResults"></ul>
+          <div class="net" id="net3bad"><div class="title">// network · requests sent: <span id="badReqs">0</span></div></div>
+        </div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <button class="reset" type="button" onclick="resetSearch('good')">reset</button>
+        <div class="demo">
+          <input type="search" id="goodSearch" aria-label="Search fruit" placeholder="Search fruit…" autocomplete="off" aria-describedby="goodCount">
+          <div class="meter" id="goodDelay">Keystroke → screen: type to measure.</div>
+          <div class="results-head"><span id="goodCount" role="status"></span><span id="goodMatch"></span></div>
+          <ul class="results" id="goodResults"></ul>
+          <div class="net" id="net3good"><div class="title">// network · requests sent: <span id="goodReqs">0</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Heavy synchronous work on every keystroke</strong> (~150 ms here, like re-filtering and re-rendering a huge list) blocks the main thread, so <strong>your letters appear late</strong> (poor INP).</li>
+          <li><strong>A request per keystroke</strong>: 9 requests for “pineapple”, wasting server capacity.</li>
+          <li><strong>Out-of-order responses</strong>: the slow request for “p” comes back <em>last</em> and overwrites the correct results, so the list doesn't match what you typed.</li>
+          <li>No sign that a search is in progress.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Input handler does almost nothing</strong>, so letters appear instantly. Heavy work belongs on the server or in a Web Worker.</li>
+          <li><strong>Debounce (250 ms)</strong>: search runs once you pause; usually 1–2 requests instead of 9.</li>
+          <li><strong><code>AbortController</code> + request IDs</strong>: superseded requests are cancelled and late responses ignored, so results always match the input.</li>
+          <li><strong>Old results stay visible but dimmed</strong> with a “Searching…” note instead of flashing empty.</li>
+          <li>Result count announced politely to screen readers.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Keep the main thread free</span>
+      <span class="tag">INP ≤ 200 ms</span>
+      <span class="tag">Debounce the work, not the input</span>
+      <span class="tag">Cancel stale requests</span>
+      <span class="tag">Keep stale content while refreshing</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 4: LONG OPERATIONS                                        -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex4" aria-labelledby="ex4-title">
+    <h2 id="ex4-title">4. The export that holds you hostage</h2>
+    <p class="scenario">
+      Try it: start an export on both sides (it takes about 7 seconds on the server), then try to type a note while
+      you wait. In the good version, also try “Cancel”.
+    </p>
+
+    <div class="compare">
+      <!-- BAD -->
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <div class="demo export-body" id="badExportBody">
+          <button class="btn btn-primary" type="button" onclick="badExport()">Export report</button>
+          <p class="status-line" id="badExportResult"></p>
+          <div class="notes">
+            <label for="badNotes">Meeting notes</label>
+            <textarea id="badNotes" rows="3"></textarea>
+          </div>
+          <div class="blocker" id="badBlocker"><span class="spinner"></span>Please wait…</div>
+        </div>
+        <div class="net" id="net4bad"><div class="title">// network</div></div>
+      </div>
+
+      <!-- GOOD -->
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <div class="demo export-body">
+          <button class="btn btn-primary" type="button" id="goodExportBtn" onclick="goodExport()">Export Q3 sales report (PDF)</button>
+          <div id="goodJobArea"></div>
+          <p class="status-line ok" id="goodExportStatus" role="status"></p>
+          <div class="notes">
+            <label for="goodNotes">Meeting notes</label>
+            <textarea id="goodNotes" rows="3"></textarea>
+          </div>
+          <div class="toast" id="goodToast"><span>Q3 sales report is ready</span><a href="#ex4" class="demo-link">Download</a></div>
+        </div>
+        <div class="net" id="net4good"><div class="title">// network</div></div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>A blocking overlay</strong> freezes the whole UI for the full duration, so you can't type your notes or do anything else.</li>
+          <li><strong>Indeterminate “Please wait…”</strong> for 7 s: no idea whether it's 10% or 90% done, or stuck.</li>
+          <li><strong>No cancel.</strong> Clicked by mistake? Too bad.</li>
+          <li><strong>One long HTTP request</strong>: if the tab closes or the connection drops, the work is lost (and long requests hit gateway timeouts at scale).</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Async job</strong>: <code>POST /exports</code> returns <code>202 Accepted</code> + a job ID immediately; a worker does the work.</li>
+          <li><strong>Determinate progress with steps</strong> (“Building PDF · 54% · about 3 s left”) from a progress endpoint.</li>
+          <li><strong>The rest of the UI stays usable</strong>, so you keep typing your notes.</li>
+          <li><strong>Cancel</strong> at any time.</li>
+          <li><strong>Notification on completion</strong> (toast + live region); in a real app the job also survives a page refresh and can email a link.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Async job pattern (202 + polling/SSE)</span>
+      <span class="tag">Determinate progress</span>
+      <span class="tag">Uncertain waits feel longer</span>
+      <span class="tag">User control and freedom</span>
+      <span class="tag">Notify on completion</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Companion to <a href="README.md">the Responsiveness README</a>. All server latency here is simulated with timers.
+</footer>
+
+<script>
+// =====================================================================
+// Shared helpers
+// =====================================================================
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pageStart = performance.now();
+
+function log(boxId, text, cls = '') {
+  const box = $(boxId);
+  const line = document.createElement('div');
+  line.className = cls;
+  line.textContent = `${((performance.now() - pageStart) / 1000).toFixed(1).padStart(6)}s  ${text}`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+function clearLog(boxId) {
+  const box = $(boxId);
+  [...box.children].slice(1).forEach(c => c.remove());
+}
+// A fake network request: resolves (or fails) after `ms`, can be aborted.
+function fakeRequest(ms, { fail = false, signal } = {}) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => (fail ? reject(new Error('500 Internal Server Error')) : resolve()), ms);
+    signal?.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')); });
+  });
+}
+function uuid() {
+  return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+document.querySelectorAll('.demo-link').forEach(a => a.addEventListener('click', e => e.preventDefault()));
+
+// =====================================================================
+// Example 1: optimistic to-do list
+// =====================================================================
+const latency1 = () => Number($('lat1').value);
+const failing1 = () => $('fail1').checked;
+const initialTodos = () => [
+  { id: uuid(), text: 'Book dentist appointment', done: false, state: 'saved' },
+  { id: uuid(), text: 'Reply to Lan’s email', done: true, state: 'saved' },
+];
+const todos = { bad: initialTodos(), good: initialTodos() };
+
+function renderTodos(side) {
+  const ul = $(side + 'Todos');
+  ul.innerHTML = '';
+  for (const t of todos[side]) {
+    const li = document.createElement('li');
+    li.className = [t.done ? 'done' : '', t.state].join(' ');
+    const disabled = side === 'good' && t.state !== 'saved' ? 'disabled' : '';
+    li.innerHTML = `<label><input type="checkbox" data-id="${t.id}" ${t.done ? 'checked' : ''} ${disabled}>
+      <span class="txt">${escapeHtml(t.text)}</span></label>`;
+    if (side === 'good' && t.state === 'pending') {
+      li.insertAdjacentHTML('beforeend', '<span class="state"><span class="spinner"></span> Saving…</span>');
+    }
+    if (side === 'good' && t.state === 'failed') {
+      li.insertAdjacentHTML('beforeend', `<span class="state">Not saved</span>
+        <button type="button" class="btn-link" data-retry="${t.id}">Retry</button>
+        <button type="button" class="btn-link" data-remove="${t.id}">Remove</button>`);
+    }
+    ul.appendChild(li);
+  }
+}
+
+// ---- bad: wait for the server before showing anything ----
+$('badTodoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const input = $('badTodoInput');
+  const text = input.value.trim();
+  if (!text) return;
+  $('badTodoErr').textContent = '';
+  log('net1bad', `POST /tasks "${text}"`);
+  try {
+    await fakeRequest(latency1(), { fail: failing1() });
+    todos.bad.push({ id: uuid(), text, done: false, state: 'saved' });
+    log('net1bad', `← 201 Created "${text}"`, 'ok');
+    renderTodos('bad');
+  } catch {
+    log('net1bad', '← 500 Internal Server Error', 'err');
+    $('badTodoErr').textContent = 'Error';
+  }
+  input.value = '';   // cleared only at the end, also on failure: the user's text is lost
+});
+$('badTodos').addEventListener('click', async e => {
+  const cb = e.target.closest('input[type=checkbox]');
+  if (!cb) return;
+  e.preventDefault();   // the checkbox refuses to change until the server answers
+  const t = todos.bad.find(x => x.id === cb.dataset.id);
+  log('net1bad', `PATCH /tasks/${t.id.slice(0, 8)} done=${!t.done}`);
+  try {
+    await fakeRequest(latency1(), { fail: failing1() });
+    t.done = !t.done;
+    log('net1bad', '← 200 OK', 'ok');
+  } catch {
+    log('net1bad', '← 500 Internal Server Error', 'err');
+    $('badTodoErr').textContent = 'Error';
+  }
+  renderTodos('bad');
+});
+
+// ---- good: optimistic, with visible rollback and retry ----
+async function saveGoodTodo(t, isRetry = false) {
+  t.state = 'pending';
+  renderTodos('good');
+  log('net1good', `POST /tasks "${t.text}"  Idempotency-Key: ${t.id.slice(0, 8)}${isRetry ? '  (retry)' : ''}`);
+  try {
+    await fakeRequest(latency1(), { fail: failing1() });
+    t.state = 'saved';
+    log('net1good', `← 201 Created${isRetry ? ' (server dedupes on the key, so no duplicate)' : ''}`, 'ok');
+  } catch {
+    t.state = 'failed';
+    log('net1good', '← 500 Internal Server Error', 'err');
+    $('goodTodoStatus').textContent = `Couldn’t save “${t.text}”. Retry or remove it.`;
+  }
+  renderTodos('good');
+}
+$('goodTodoForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = $('goodTodoInput');
+  const text = input.value.trim();
+  if (!text) return;
+  $('goodTodoStatus').textContent = '';
+  const t = { id: uuid(), text, done: false, state: 'pending' };
+  todos.good.push(t);
+  input.value = '';   // ready for the next task immediately
+  input.focus();
+  saveGoodTodo(t);
+});
+$('goodTodos').addEventListener('change', async e => {
+  const cb = e.target.closest('input[type=checkbox]');
+  if (!cb) return;
+  const t = todos.good.find(x => x.id === cb.dataset.id);
+  const previous = t.done;
+  t.done = cb.checked;            // optimistic
+  renderTodos('good');
+  $('goodTodoStatus').textContent = '';
+  log('net1good', `PUT /tasks/${t.id.slice(0, 8)} done=${t.done}`);
+  try {
+    await fakeRequest(latency1(), { fail: failing1() });
+    log('net1good', '← 200 OK', 'ok');
+  } catch {
+    t.done = previous;            // visible rollback
+    renderTodos('good');
+    log('net1good', '← 500 Internal Server Error (rolled back)', 'err');
+    $('goodTodoStatus').textContent = `Couldn’t update “${t.text}”. It’s been changed back.`;
+  }
+});
+$('goodTodos').addEventListener('click', e => {
+  const retry = e.target.dataset.retry, remove = e.target.dataset.remove;
+  if (retry) { $('goodTodoStatus').textContent = ''; saveGoodTodo(todos.good.find(x => x.id === retry), true); }
+  if (remove) { todos.good = todos.good.filter(x => x.id !== remove); renderTodos('good'); $('goodTodoInput').focus(); }
+});
+function resetTodos(side) {
+  todos[side] = initialTodos();
+  clearLog(side === 'bad' ? 'net1bad' : 'net1good');
+  if (side === 'bad') $('badTodoErr').textContent = ''; else $('goodTodoStatus').textContent = '';
+  renderTodos(side);
+}
+renderTodos('bad');
+renderTodos('good');
+
+// =====================================================================
+// Example 2: feed loading & layout shift
+// =====================================================================
+const POSTS = [
+  { title: 'How we cut our p99 latency in half', text: 'A story about connection pools, retries, and one very surprising DNS setting.', color: '#9ec5ff' },
+  { title: 'Designing idempotent payment APIs', text: 'Idempotency keys, retries and why the "Pay" button must never charge twice.', color: '#a5d6a7' },
+  { title: 'Skeleton screens: do they help?', text: 'What the research says about perceived performance, and when spinners are fine.', color: '#ffcc80' },
+];
+const FEED_MS = 1500, IMAGES_MS = 800;   // data at 1.5 s, images + ad 0.8 s later
+
+function postHtml(p, { withImage }) {
+  return `<article class="post"><div class="img" style="${withImage ? `background:${p.color}` : ''}"></div>
+    <div><h4>${p.title}</h4><p>${p.text}</p><button type="button" class="btn btn-secondary read" data-title="${p.title}">Read</button></div></article>`;
+}
+function skeletonHtml() {
+  return `<article class="post" aria-hidden="true"><div class="img skel"></div>
+    <div><div class="skel" style="height:1.4rem;width:75%"></div>
+      <div style="height:3em;font-size:.9rem;margin:.2rem 0 .4rem;padding-top:.15rem"><div class="skel skel-line"></div><div class="skel skel-line" style="width:60%"></div></div>
+      <div class="skel read" style="width:4.6rem;height:36px;border-radius:6px"></div></div></article>`;
+}
+function firstButtonTop(feed) {
+  const b = feed.querySelector('.read');
+  return b ? b.getBoundingClientRect().top - feed.getBoundingClientRect().top : null;
+}
+function reportJump(id, px) {
+  const ok = Math.abs(px) < 1;
+  $(id).innerHTML = ok
+    ? 'Layout shift: <strong class="good-num">0 px</strong> ✓ nothing moved after it appeared'
+    : `Layout shift: <strong class="bad-num">${Math.round(px)} px</strong> ✗ the first “Read” button jumped after it appeared`;
+}
+function feedClicks(feedId, statusId) {
+  $(feedId).addEventListener('click', e => {
+    const read = e.target.closest('.read[data-title]');
+    const ad = e.target.closest('.ad-btn');
+    if (read) { $(statusId).className = 'status-line ok'; $(statusId).textContent = `Opened: “${read.dataset.title}”`; }
+    if (ad) { $(statusId).className = 'status-line err'; $(statusId).textContent = 'Oops, you clicked the ad (it pushed “Read” away).'; }
+  });
+}
+feedClicks('badFeed', 'badFeedStatus');
+feedClicks('goodFeed', 'goodFeedStatus');
+
+let badFeedRun = 0;
+async function loadBadFeed() {
+  const run = ++badFeedRun;
+  const feed = $('badFeed');
+  $('badFeedStatus').textContent = '';
+  $('badJump').textContent = 'Layout shift: loading…';
+  feed.innerHTML = '<div class="center-spinner"><span class="spinner"></span> Loading…</div>';   // everything thrown away
+  log('net2bad', 'GET /feed');
+  await sleep(FEED_MS);
+  if (run !== badFeedRun) return;
+  log('net2bad', '← 200 feed (3 posts)', 'ok');
+  feed.innerHTML = POSTS.map(p => postHtml(p, { withImage: false })).join('');
+  const before = firstButtonTop(feed);
+  await sleep(IMAGES_MS);
+  if (run !== badFeedRun) return;
+  log('net2bad', '← images loaded, ad loaded (injected at top)', 'note');
+  feed.querySelectorAll('.img').forEach((img, i) => { img.style.height = '82px'; img.style.background = POSTS[i].color; });
+  feed.insertAdjacentHTML('afterbegin', '<div class="ad"><span><strong>Sponsored</strong> · Big sale on headphones</span><button type="button" class="btn btn-primary ad-btn" style="min-height:36px;padding:.3rem .8rem">Shop now</button></div>');
+  reportJump('badJump', firstButtonTop(feed) - before);
+}
+
+let goodFeedCached = false, goodFeedRun = 0;
+async function loadGoodFeed() {
+  const run = ++goodFeedRun;
+  const feed = $('goodFeed');
+  feed.setAttribute('aria-busy', 'true');
+  $('goodFeedStatus').textContent = '';
+  const adSlot = '<div class="ad placeholder" aria-hidden="true">Sponsored</div>';
+  if (goodFeedCached) {
+    // Stale-while-revalidate: show what we have instantly, refresh in the background.
+    feed.innerHTML = '<div class="ad"><span><strong>Sponsored</strong> · Big sale on headphones</span><button type="button" class="btn btn-primary ad-btn" style="min-height:36px;padding:.3rem .8rem">Shop now</button></div>'
+      + POSTS.map(p => postHtml(p, { withImage: true })).join('');
+    $('goodUpdating').innerHTML = '<span class="spinner"></span> Updating…';
+  } else {
+    feed.innerHTML = adSlot + POSTS.map(skeletonHtml).join('');
+  }
+  const before = firstButtonTop(feed);
+  log('net2good', goodFeedCached ? 'GET /feed  (showing cached copy meanwhile)' : 'GET /feed  (skeleton shown meanwhile)');
+  await sleep(FEED_MS);
+  if (run !== goodFeedRun) return;
+  log('net2good', '← 200 feed (3 posts)', 'ok');
+  if (!goodFeedCached) {
+    feed.innerHTML = adSlot + POSTS.map(p => postHtml(p, { withImage: false })).join('');   // text first, image boxes reserved
+    await sleep(IMAGES_MS);
+    if (run !== goodFeedRun) return;
+    log('net2good', '← images loaded, ad loaded (into reserved slots)', 'ok');
+    feed.querySelectorAll('.img').forEach((img, i) => { img.style.background = POSTS[i].color; });
+    feed.querySelector('.ad').outerHTML = '<div class="ad"><span><strong>Sponsored</strong> · Big sale on headphones</span><button type="button" class="btn btn-primary ad-btn" style="min-height:36px;padding:.3rem .8rem">Shop now</button></div>';
+  }
+  reportJump('goodJump', firstButtonTop(feed) - before);
+  feed.setAttribute('aria-busy', 'false');
+  $('goodUpdating').textContent = goodFeedCached ? 'Updated just now' : '';
+  $('goodFeedStatus').className = 'status-line';
+  $('goodFeedStatus').textContent = goodFeedCached ? 'Feed updated.' : 'Feed loaded.';
+  goodFeedCached = true;
+}
+
+// =====================================================================
+// Example 3: search-as-you-type
+// =====================================================================
+const FRUITS = ['apple', 'apricot', 'avocado', 'banana', 'blackberry', 'blueberry', 'cherry', 'coconut', 'cranberry',
+  'date', 'dragon fruit', 'durian', 'fig', 'grape', 'grapefruit', 'guava', 'jackfruit', 'kiwi', 'lemon', 'lime',
+  'lychee', 'mango', 'mangosteen', 'melon', 'nectarine', 'orange', 'papaya', 'passion fruit', 'peach', 'pear',
+  'persimmon', 'pineapple', 'pineapple juice', 'pine nut', 'plum', 'pomegranate', 'pomelo', 'rambutan', 'raspberry',
+  'starfruit', 'strawberry', 'tangerine', 'watermelon', 'apple pie', 'grape juice', 'peanut', 'pecan', 'pistachio'];
+
+// Shorter queries match more items, so the simulated server is slower for them.
+function serverSearch(q, signal) {
+  const ms = Math.max(150, 2600 - 300 * q.length);
+  return fakeRequest(ms, { signal }).then(() => ({ q, ms, results: FRUITS.filter(f => f.includes(q.toLowerCase())) }));
+}
+function renderResults(side, r) {
+  const input = $(side + 'Search');
+  $(side + 'Results').classList.remove('stale');
+  $(side + 'Results').innerHTML = r.results.slice(0, 7).map(f => `<li>${escapeHtml(f)}</li>`).join('')
+    + (r.results.length > 7 ? `<li style="color:var(--muted)">…and ${r.results.length - 7} more</li>` : '');
+  $(side + 'Count').textContent = `${r.results.length} result${r.results.length === 1 ? '' : 's'}`;
+  const matches = r.q === input.value.trim();
+  $(side + 'Match').innerHTML = matches
+    ? `<span class="match-ok">✓ results are for “${escapeHtml(r.q)}”</span>`
+    : `<span class="match-bad">✗ results are for “${escapeHtml(r.q)}”, but the box says “${escapeHtml(input.value)}”</span>`;
+}
+// Measure "keystroke → next paint", similar to how INP measures interactions.
+const worst = { bad: 0, good: 0 };
+function measureInputDelay(e, side) {
+  const start = e.timeStamp;
+  requestAnimationFrame(() => setTimeout(() => {
+    const d = performance.now() - start;
+    worst[side] = Math.max(worst[side], d);
+    const cls = n => (n <= 100 ? 'good-num' : 'bad-num');
+    $(side + 'Delay').innerHTML = `Keystroke → screen: <strong class="${cls(d)}">${Math.round(d)} ms</strong> · worst: <strong class="${cls(worst[side])}">${Math.round(worst[side])} ms</strong> (feels instant ≤ 100 ms)`;
+  }, 0));
+}
+const reqCount = { bad: 0, good: 0 };
+
+// ---- bad ----
+$('badSearch').addEventListener('input', e => {
+  measureInputDelay(e, 'bad');
+  const end = performance.now() + 150;          // heavy synchronous work on every keystroke
+  while (performance.now() < end) { /* e.g. filtering + re-rendering 10,000 rows */ }
+  const q = $('badSearch').value.trim();
+  $('badReqs').textContent = ++reqCount.bad;
+  log('net3bad', `GET /search?q=${q}`);
+  serverSearch(q).then(r => {                   // whichever response arrives last wins
+    log('net3bad', `← "${r.q}" ${r.results.length} results (${r.ms} ms)`, r.q === $('badSearch').value.trim() ? 'ok' : 'err');
+    renderResults('bad', r);
+  });
+});
+
+// ---- good ----
+let goodTimer, goodController, goodLatest = 0;
+$('goodSearch').addEventListener('input', e => {
+  measureInputDelay(e, 'good');                 // the handler itself does almost nothing
+  clearTimeout(goodTimer);
+  const q = $('goodSearch').value.trim();
+  if (!q) {
+    goodController?.abort();
+    $('goodResults').innerHTML = ''; $('goodCount').textContent = ''; $('goodMatch').textContent = '';
+    return;
+  }
+  $('goodResults').classList.add('stale');      // keep old results, dimmed
+  $('goodMatch').innerHTML = '<span class="spinner"></span> Searching…';
+  goodTimer = setTimeout(() => runGoodSearch(q), 250);   // debounce
+});
+async function runGoodSearch(q) {
+  goodController?.abort();                      // cancel the superseded request
+  goodController = new AbortController();
+  const id = ++goodLatest;
+  $('goodReqs').textContent = ++reqCount.good;
+  log('net3good', `GET /search?q=${q}`);
+  try {
+    const r = await serverSearch(q, goodController.signal);
+    if (id !== goodLatest) return;              // ignore stale responses
+    log('net3good', `← "${r.q}" ${r.results.length} results (${r.ms} ms)`, 'ok');
+    renderResults('good', r);
+  } catch (err) {
+    if (err.name === 'AbortError') log('net3good', `✕ cancelled "${q}" (superseded)`, 'note');
+  }
+}
+function resetSearch(side) {
+  $(side + 'Search').value = '';
+  $(side + 'Results').innerHTML = '';
+  $(side + 'Count').textContent = '';
+  $(side + 'Match').textContent = '';
+  $(side + 'Delay').textContent = 'Keystroke → screen: type to measure.';
+  worst[side] = 0; reqCount[side] = 0;
+  $(side + 'Reqs').textContent = '0';
+  clearLog(side === 'bad' ? 'net3bad' : 'net3good');
+  if (side === 'good') { clearTimeout(goodTimer); goodController?.abort(); goodLatest++; }
+}
+
+// =====================================================================
+// Example 4: long-running export
+// =====================================================================
+const EXPORT_STEPS = [['Querying data', 2500], ['Building PDF', 3000], ['Uploading', 1500]];
+const EXPORT_MS = EXPORT_STEPS.reduce((s, [, ms]) => s + ms, 0);
+
+// ---- bad: one long blocking request ----
+let badExporting = false;
+async function badExport() {
+  if (badExporting) return;
+  badExporting = true;
+  const body = $('badExportBody');
+  $('badExportResult').textContent = '';
+  $('badBlocker').classList.add('open');
+  [...body.children].forEach(c => { if (c.id !== 'badBlocker') c.inert = true; });   // the whole UI is frozen
+  log('net4bad', 'POST /export  (connection held open until the report is done…)');
+  await sleep(EXPORT_MS);
+  log('net4bad', `← 200 report.pdf (${(EXPORT_MS / 1000).toFixed(1)} s)`, 'ok');
+  $('badBlocker').classList.remove('open');
+  [...body.children].forEach(c => { c.inert = false; });
+  $('badExportResult').textContent = 'Done.';
+  badExporting = false;
+}
+
+// ---- good: async job + progress + cancel + notify ----
+let job = null;
+function goodExport() {
+  if (job) return;
+  const id = 'j_' + Math.random().toString(36).slice(2, 7);
+  job = { id, start: performance.now(), timer: null };
+  $('goodExportStatus').textContent = '';
+  $('goodToast').classList.remove('open');
+  $('goodExportBtn').disabled = true;
+  log('net4good', 'POST /exports {report: "q3-sales"}');
+  log('net4good', `← 202 Accepted {jobId: "${id}"}  (worker picks it up)`, 'ok');
+  $('goodJobArea').innerHTML = `
+    <div class="job">
+      <div class="job-top"><strong>Q3 sales report</strong>
+        <button type="button" class="btn btn-secondary" style="min-height:34px;padding:.2rem .8rem" onclick="cancelExport()">Cancel</button></div>
+      <div class="bar" role="progressbar" aria-label="Export progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="jobBar"><div></div></div>
+      <div style="font-size:.88rem" id="jobText">Queued…</div>
+      <ol class="steps" id="jobSteps">${EXPORT_STEPS.map(([s]) => `<li>${s}</li>`).join('')}</ol>
+    </div>`;
+  job.timer = setInterval(pollJob, 700);        // in production: poll with backoff, or use SSE
+  pollJob();
+}
+function pollJob() {
+  if (!job) return;
+  const elapsed = performance.now() - job.start;
+  const pct = Math.min(100, Math.round((elapsed / EXPORT_MS) * 100));
+  let acc = 0, stepIdx = EXPORT_STEPS.length - 1;
+  for (let i = 0; i < EXPORT_STEPS.length; i++) { acc += EXPORT_STEPS[i][1]; if (elapsed < acc) { stepIdx = i; break; } }
+  const bar = $('jobBar');
+  bar.setAttribute('aria-valuenow', pct);
+  bar.firstElementChild.style.width = pct + '%';
+  [...$('jobSteps').children].forEach((li, i) => {
+    li.className = pct >= 100 || i < stepIdx ? 'done' : i === stepIdx ? 'active' : '';
+    li.textContent = (li.className === 'done' ? '✓ ' : '') + EXPORT_STEPS[i][0];
+  });
+  if (pct >= 100) {
+    log('net4good', `GET /exports/${job.id} → done {url: ".../q3-sales.pdf"}`, 'ok');
+    clearInterval(job.timer);
+    job = null;
+    $('goodExportBtn').disabled = false;
+    $('goodJobArea').innerHTML = '';
+    $('goodExportStatus').innerHTML = 'Q3 sales report is ready. <a href="#ex4" class="demo-link" onclick="event.preventDefault()">Download PDF (1.2 MB)</a>';
+    $('goodToast').classList.add('open');
+    setTimeout(() => $('goodToast').classList.remove('open'), 5000);
+    return;
+  }
+  const left = Math.ceil((EXPORT_MS - elapsed) / 1000);
+  $('jobText').textContent = `${EXPORT_STEPS[stepIdx][0]}… ${pct}% · about ${left} s left · you can keep working`;
+  log('net4good', `GET /exports/${job.id} → running ${pct}% "${EXPORT_STEPS[stepIdx][0]}"`);
+}
+function cancelExport() {
+  if (!job) return;
+  clearInterval(job.timer);
+  log('net4good', `DELETE /exports/${job.id} → cancelled`, 'note');
+  job = null;
+  $('goodJobArea').innerHTML = '';
+  $('goodExportBtn').disabled = false;
+  $('goodExportBtn').focus();
+  $('goodExportStatus').textContent = 'Export cancelled.';
+}
+</script>
+</body>
+</html>

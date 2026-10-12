@@ -27,8 +27,10 @@ Availability ≠ reliability. A system can be *available* but *unreliable* (it a
 14. [Approaches by system type](#14-approaches-by-system-type)
 15. [Trade-offs](#15-trade-offs)
 16. [Anti-patterns](#16-anti-patterns)
-17. [Checklist](#17-checklist)
-18. [Further reading](#18-further-reading)
+17. [Real-world outages](#17-real-world-outages)
+18. [Checklist](#18-checklist)
+19. [Exercises](#19-exercises)
+20. [Further reading](#20-further-reading)
 
 ---
 
@@ -104,6 +106,50 @@ Request-based availability is usually better than time-based:
 ```
 Availability = successful requests / total valid requests
 ```
+
+### 1.5 Worked example: estimating an architecture
+
+A small shop: users browse products and place orders. Assumed component availabilities (typical cloud SLAs / experience):
+
+| Component | Single | Redundant |
+|---|---|---|
+| Managed load balancer | 99.99% | (already redundant internally) |
+| App server (VM) | 99.5% | 2 instances in 2 AZs |
+| Database | 99.5% (single VM) | 99.95% (managed Multi-AZ) |
+| Redis cache | 99.9% | - |
+| Payment API (third party) | 99.9% | - |
+
+**Version A: naive.** One app server, one DB, the app crashes if Redis is down, checkout calls the payment API synchronously.
+
+```
+0.9999 (LB) × 0.995 (app) × 0.995 (DB) × 0.999 (cache) × 0.999 (payment)
+= 0.9879  →  98.8%  →  about 4.4 days of downtime per year
+```
+
+**Version B: same features, better design.**
+- 2 app servers across AZs: `1 − 0.005² = 99.9975%`
+- Managed Multi-AZ DB: 99.95%
+- Cache made a **soft** dependency (on error, read from the DB): it drops out of the chain
+- Orders accepted and payment processed from a queue: the payment API drops out of the critical path
+
+```
+0.9999 (LB) × 0.999975 (app pair) × 0.9995 (DB)
+= 0.99937  →  99.94%  →  about 5.5 hours of downtime per year
+```
+
+Lessons:
+- The biggest win came from **removing hard dependencies**, not from adding servers.
+- The availability of a serial chain is capped by its **weakest link** (here, the DB). Making the app tier 5 nines changes nothing while the DB is 99.95%.
+- The parallel formula assumes **independent** failures and **instant** failover. Real failover takes time (a DB failover takes 30–120 s), and that time counts as downtime.
+
+**The MTTR lever, in numbers.** The DB fails twice a month (a month is about 43,800 min):
+
+| Recovery | Downtime / month | Availability |
+|---|---|---|
+| A human gets paged, investigates, promotes a replica: 30 min each | 60 min | 99.86% |
+| Automated failover: 3 min each | 6 min | 99.986% |
+
+Same failure rate, an extra nine, just from recovering faster.
 
 ---
 
@@ -646,7 +692,26 @@ Different systems need very different availability strategies. Always start from
 
 ---
 
-## 17. Checklist
+## 17. Real-world outages
+
+Big outages are rarely caused by one broken server. They're usually a **change**, a **hidden shared dependency**, or a **recovery mechanism that made things worse**. Read the public postmortems; they're the best availability textbook there is.
+
+| Outage | What happened | Lesson |
+|---|---|---|
+| **AWS S3, us-east-1 (Feb 2017)** | An engineer ran a maintenance command with a typo and removed far more servers than intended. Restarting the subsystems took hours. Many websites went down, and so did the AWS status page, which depended on S3. | Guardrails on operational tools (limits, previews). Your monitoring/status page must not depend on what it monitors. |
+| **GitLab.com (Jan 2017)** | During an incident, an engineer deleted the primary DB's data directory by mistake. Of 5 backup/replication mechanisms, none worked properly. About 6 hours of data was lost. | Untested backups aren't backups (§12.3). |
+| **Cloudflare (Jul 2019)** | A new WAF rule contained a regular expression that backtracked catastrophically, pushing CPU to 100% on every edge server worldwide at once. | Config changes are deploys: canary them (§11). |
+| **Facebook (Oct 2021)** | A backbone maintenance command withdrew the BGP routes to Facebook's DNS servers. Everything vanished from the internet for about 6 hours. Internal tools and even badge access depended on the same network, which slowed recovery. | Out-of-band access for recovery. Avoid circular dependencies. |
+| **AWS us-east-1 (Dec 2021)** | An automated scaling activity on the internal network triggered a surge of connections and retries that overloaded internal devices. Many services and AWS's own monitoring were impaired for hours. | Retry storms and congestion collapse (§8.2, §9). |
+| **CrowdStrike (Jul 2024)** | A faulty content update for the Falcon sensor was pushed to all Windows hosts at once and crashed them on boot (about 8.5 million machines). Airlines, hospitals and banks were affected. Each machine needed manual repair. | Staged rollouts, even for "just data" updates. Blast radius. |
+| **AWS us-east-1 (Oct 2025)** | A race condition in DynamoDB's automated DNS management left the regional DynamoDB endpoint with an empty DNS record. Services that depend on DynamoDB (including other AWS services) failed, and the backlog made recovery take many hours. | Control-plane automation is a SPOF too. Know your dependencies' dependencies. |
+| **Cloudflare (Nov 2025)** | A database permissions change made a generated bot-management config file double in size. It exceeded a hard limit in the proxy, which crashed, causing widespread 5xx errors. | Validate generated config like code. Fail safe on bad input instead of crashing. |
+
+Common threads: changes pushed **globally at once**, **retries/recovery** making overload worse, and **hidden dependencies** (status pages, internal tools, DNS) failing at the same time as the thing they support.
+
+---
+
+## 18. Checklist
 
 **Define**
 - [ ] SLIs measured from user perspective
@@ -681,7 +746,20 @@ Different systems need very different availability strategies. Always start from
 
 ---
 
-## 18. Further reading
+## 19. Exercises
+
+1. **Error budget math.** Your SLO is 99.95% over 30 days. How many minutes of downtime is that? You've already had a 15-minute outage this month. A risky migration has a 20% chance of causing 30 minutes of downtime. Do you run it this month?
+2. **Dependency chain.** A checkout service has 6 hard dependencies, each at 99.9%. What's its maximum availability? Pick 3 of them and redesign so they become soft dependencies (cache, queue, fallback, default value). Recompute.
+3. **SPOF hunt.** Draw the architecture of a project you built (or a WordPress site: 1 VM with Nginx + PHP + MySQL, uploads on local disk, a cron job, a Let's Encrypt cert). For every box and arrow, ask "what if this disappears now?" List every SPOF and the cheapest fix for each.
+4. **Write SLIs/SLOs** for a URL shortener: one for redirects, one for creating links. Should they have the same target? How would you measure them (server logs, LB metrics, synthetic probes)?
+5. **Retry amplification.** Client → API gateway → service A → service B. Each layer retries 3 times on timeout. B goes down. How many requests hit B per client request? Redesign the retry policy.
+6. **Pick RPO/RTO and a DR strategy** (§12.2) for: a personal blog, a B2B SaaS invoicing tool, a bank's card authorization service. Justify the cost.
+7. **CP or AP?** For each, decide what the system should do during a network partition: shopping cart, seat booking for a flight, like counter, password change, bank transfer.
+8. **Read a postmortem** from §17 in full. List the chain of events, which detection/mitigation steps took longest, and which items in the §18 checklist would have prevented it or shortened it.
+
+---
+
+## 20. Further reading
 
 - *Site Reliability Engineering* (Google) — chapters on SLOs, cascading failures, handling overload — free at sre.google
 - *The Site Reliability Workbook* (Google) — practical SLO and alerting
@@ -691,3 +769,4 @@ Different systems need very different availability strategies. Always start from
 - AWS Well-Architected Framework — Reliability Pillar
 - Dynamo paper (2007) — availability-first key-value store
 - Netflix Tech Blog — chaos engineering, regional evacuation
+- Public postmortem collections: github.com/danluu/post-mortems, AWS Post-Event Summaries, the Cloudflare blog

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internationalization: Bad vs Good — 4 Interactive Examples</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #52606d;
+    --border: #d9dee5;
+    --bad: #b71c1c;
+    --bad-bg: #fdecea;
+    --good: #1b5e20;
+    --good-bg: #e8f5e9;
+    --warn: #8a4b00;
+    --warn-bg: #fff4e0;
+    --primary: #1a5fd0;
+    --primary-dark: #134aa3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Arabic", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+  header {
+    background: #1f2933;
+    color: #fff;
+    padding: 2rem 1.5rem;
+  }
+  header h1 { margin: 0 0 .5rem; font-size: 1.8rem; }
+  header p { margin: 0 0 .4rem; color: #d5dbe1; max-width: 62rem; }
+  header a { color: #b5d3ff; }
+  main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
+  nav.toc { margin-bottom: 2rem; }
+  nav.toc a { color: var(--primary); margin-right: 1.25rem; }
+
+  section.example {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  section.example > h2 { margin-top: 0; }
+  .scenario { color: var(--muted); margin-top: -.5rem; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: .6rem 1.5rem; align-items: center;
+    background: #f9fafb; border: 1px solid var(--border); border-radius: 8px; padding: .6rem .9rem; margin-top: 1rem;
+  }
+  .controls label { display: inline-flex; gap: .4rem; align-items: center; font-weight: 600; font-size: .92rem; }
+  .controls select, .controls input { font: inherit; font-weight: 400; padding: .3rem .45rem; border: 1px solid #8a96a3; border-radius: 5px; }
+  .controls input[type=number] { width: 7.5rem; }
+  .controls input[type=text] { width: 16rem; max-width: 100%; }
+  .quick { display: inline-flex; flex-wrap: wrap; gap: .3rem; align-items: center; font-size: .85rem; color: var(--muted); }
+  .quick button {
+    font: inherit; font-size: .82rem; border: 1px solid #b8c0cc; background: #fff; border-radius: 999px;
+    padding: .1rem .55rem; cursor: pointer; min-height: 28px;
+  }
+  .quick button:hover { border-color: var(--primary); color: var(--primary); }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin: 1.25rem 0;
+  }
+  @media (max-width: 800px) { .compare { grid-template-columns: 1fr; } }
+
+  .panel {
+    border-radius: 10px;
+    padding: 1rem 1.25rem 1.25rem;
+    border: 2px solid;
+    position: relative;
+    min-width: 0;
+  }
+  .panel.bad  { border-color: var(--bad);  background: #fffafa; }
+  .panel.good { border-color: var(--good); background: #fafffa; }
+  .badge {
+    display: inline-block;
+    font-weight: 700;
+    font-size: .8rem;
+    letter-spacing: .05em;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    margin: 0 0 .75rem;
+  }
+  .bad  .badge { background: var(--bad-bg);  color: var(--bad); }
+  .good .badge { background: var(--good-bg); color: var(--good); }
+
+  .analysis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 800px) { .analysis { grid-template-columns: 1fr; } }
+  .analysis h3 { margin: 0 0 .5rem; font-size: 1rem; }
+  .analysis ul { margin: 0; padding-left: 1.2rem; }
+  .analysis li { margin-bottom: .35rem; }
+  .problems h3 { color: var(--bad); }
+  .fixes h3 { color: var(--good); }
+  .principles {
+    margin-top: 1rem;
+    font-size: .9rem;
+    color: var(--muted);
+    border-top: 1px dashed var(--border);
+    padding-top: .75rem;
+  }
+  .tag {
+    display: inline-block;
+    background: #eef2f7;
+    border-radius: 4px;
+    padding: .05rem .45rem;
+    margin: .15rem .2rem .15rem 0;
+    font-size: .8rem;
+    color: #334155;
+  }
+
+  /* ---------- Shared bits ---------- */
+  .verdicts { list-style: none; padding: 0; margin: .8rem 0 0; font-size: .88rem; }
+  .verdicts li { padding: .3rem .55rem; border-radius: 5px; margin-bottom: .3rem; }
+  .verdicts li.x  { background: var(--bad-bg);  color: var(--bad); }
+  .verdicts li.ok { background: var(--good-bg); color: var(--good); }
+  .verdicts li.w  { background: var(--warn-bg); color: var(--warn); }
+  .code {
+    font-family: ui-monospace, Consolas, monospace; font-size: .78rem;
+    background: #1f2933; color: #e4e7eb; border-radius: 6px; padding: .55rem .7rem; margin: .8rem 0 0;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .code .k { color: #9ec5ff; }
+  .chip { display: inline-block; font-size: .78rem; font-weight: 700; border-radius: 4px; padding: 0 .4rem; background: #e8eefb; color: var(--primary-dark); }
+
+  /* ---------- Example 1: messages ---------- */
+  .bubble {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: .8rem 1rem;
+    font-size: 1.1rem; min-height: 3.2rem;
+  }
+  .pager { margin-top: .6rem; color: var(--muted); font-size: .95rem; }
+
+  /* ---------- Example 2: formatting ---------- */
+  .order { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--border); border-radius: 8px; font-size: .93rem; }
+  .order th, .order td { text-align: start; padding: .42rem .65rem; border-bottom: 1px solid #eef0f3; vertical-align: top; }
+  .order th { color: var(--muted); font-weight: 600; width: 38%; }
+  .order tr:last-child th, .order tr:last-child td { border-bottom: none; }
+
+  /* ---------- Example 3: layout ---------- */
+  .mock { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: .8rem; overflow: hidden; }
+  .mock svg.arrow { width: 1em; height: 1em; vertical-align: -.15em; }
+  .expansion { font-size: .88rem; color: var(--muted); }
+
+  /* bad: fixed sizes and physical properties */
+  .mock-bad .tabs { display: flex; gap: 4px; margin-bottom: .7rem; }
+  .mock-bad .tab { width: 76px; white-space: nowrap; overflow: hidden; padding: .3rem .4rem; background: #eef2f7; border-radius: 4px; font-size: .88rem; text-align: left; }
+  .mock-bad .title-row { position: relative; }
+  .mock-bad h3 { margin: 0; font-size: 1.15rem; line-height: 1; height: 1.05em; overflow: hidden; text-align: left; padding-right: 3rem; }
+  .mock-bad .new { position: absolute; right: 0; top: 0; }
+  .mock-bad p { text-align: left; margin: .4rem 0 .7rem; font-size: .9rem; color: var(--muted); }
+  .mock-bad .field { position: relative; margin-bottom: .7rem; }
+  .mock-bad .field label { display: block; text-align: left; font-size: .85rem; font-weight: 600; }
+  .mock-bad .field input { width: 100%; font: inherit; padding: .4rem .5rem .4rem 2rem; border: 1px solid #8a96a3; border-radius: 5px; }
+  .mock-bad .field .icon { position: absolute; left: .55rem; bottom: .45rem; }
+  .mock-bad .activity { font-size: .88rem; text-align: left; margin-bottom: .7rem; }
+  .mock-bad .actions { text-align: right; }
+  .mock-bad .actions button { width: 96px; white-space: nowrap; overflow: hidden; font: inherit; font-size: .88rem; padding: .35rem .3rem; margin-left: .4rem; border-radius: 5px; border: 1px solid #8a96a3; background: #fff; }
+  .mock-bad .actions .primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .mock-bad .next { margin-top: .6rem; font-size: .9rem; text-align: left; color: var(--primary); }
+
+  /* good: flexible sizes and logical properties */
+  .mock-good .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: .7rem; }
+  .mock-good .tab { padding: .3rem .7rem; background: #eef2f7; border-radius: 4px; font-size: .88rem; }
+  .mock-good .title-row { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .mock-good h3 { margin: 0; font-size: 1.15rem; line-height: 1.45; }
+  .mock-good p { text-align: start; margin: .4rem 0 .7rem; font-size: .9rem; color: var(--muted); line-height: 1.6; }
+  .mock-good .field { position: relative; margin-bottom: .7rem; }
+  .mock-good .field label { display: block; font-size: .85rem; font-weight: 600; }
+  .mock-good .field input { width: 100%; font: inherit; padding-block: .4rem; padding-inline: 2rem .5rem; border: 1px solid #8a96a3; border-radius: 5px; }
+  .mock-good .field .icon { position: absolute; inset-inline-start: .55rem; bottom: .45rem; }
+  .mock-good .activity { font-size: .88rem; margin-bottom: .7rem; line-height: 1.6; }
+  .mock-good .actions { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: flex-end; }
+  .mock-good .actions button { font: inherit; font-size: .88rem; padding: .35rem .8rem; border-radius: 5px; border: 1px solid #8a96a3; background: #fff; min-height: 34px; }
+  .mock-good .actions .primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .mock-good .next { margin-top: .6rem; font-size: .9rem; color: var(--primary); }
+  .mock-good[dir=rtl] .flip { transform: scaleX(-1); }
+
+  .new { font-size: .72rem; font-weight: 700; background: #fde68a; color: #6b4e00; border-radius: 4px; padding: 0 .35rem; line-height: 1.6; }
+
+  /* ---------- Example 4: Unicode text ---------- */
+  .sub { margin-top: .9rem; }
+  .sub:first-of-type { margin-top: 0; }
+  .sub h4 { margin: 0 0 .35rem; font-size: .9rem; }
+  .namelist, .hits, .sorted { list-style: none; padding: 0; margin: 0; font-size: .9rem; }
+  .namelist li { display: flex; justify-content: space-between; gap: .5rem; padding: .15rem .2rem; border-bottom: 1px solid #eef0f3; }
+  .namelist .rej { color: var(--bad); font-weight: 600; }
+  .namelist .acc { color: var(--good); font-weight: 600; }
+  .hits li { padding: .1rem .2rem; }
+  .hits .none { color: var(--muted); font-style: italic; }
+  .sorted { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .sorted li { background: #eef2f7; border-radius: 4px; padding: 0 .4rem; }
+  .preview { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: .4rem .6rem; font-size: 1.05rem; min-height: 2.2rem; }
+  .counter { font-size: .82rem; color: var(--muted); margin-top: .25rem; }
+
+  footer { text-align: center; color: var(--muted); font-size: .9rem; padding: 2rem 1rem 3rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Internationalization: Bad vs Good</h1>
+  <p>
+    Four interactive examples of classic i18n bugs and how to fix them. Change the language, locale, currency or
+    time zone in each example's controls and watch both versions react. The good versions use the browser's built-in
+    <code>Intl</code> APIs (backed by Unicode CLDR data).
+  </p>
+  <p>Notes: <a href="README.md">Internationalization README</a>.</p>
+</header>
+
+<main>
+  <nav class="toc" aria-label="Examples">
+    <strong>Examples:</strong>
+    <a href="#ex1">1. Plurals &amp; messages</a>
+    <a href="#ex2">2. Dates, money &amp; time zones</a>
+    <a href="#ex3">3. Layout, expansion &amp; RTL</a>
+    <a href="#ex4">4. Unicode text</a>
+  </nav>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 1: PLURALS & MESSAGES                                     -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex1" aria-labelledby="ex1-title">
+    <h2 id="ex1-title">1. “You have 22 new message(s)”: plurals and concatenation</h2>
+    <p class="scenario">
+      Try it: pick Polski and try 2, 5 and 22. Then Русский with 21, العربية with 0 and 2, Français with 0, and 日本語 for
+      the page counter. Also try 1000000.
+    </p>
+    <div class="controls">
+      <label>Language
+        <select id="lang1">
+          <option value="en">English</option>
+          <option value="fr">Français</option>
+          <option value="pl" selected>Polski</option>
+          <option value="ru">Русский</option>
+          <option value="ar">العربية</option>
+          <option value="ja">日本語</option>
+          <option value="vi">Tiếng Việt</option>
+        </select>
+      </label>
+      <label>Count <input type="number" id="count1" value="22" min="0" step="1"></label>
+      <span class="quick" aria-label="Quick counts">Try:
+        <button type="button" data-count="0">0</button><button type="button" data-count="1">1</button>
+        <button type="button" data-count="2">2</button><button type="button" data-count="5">5</button>
+        <button type="button" data-count="11">11</button><button type="button" data-count="21">21</button>
+        <button type="button" data-count="22">22</button><button type="button" data-count="100">100</button>
+        <button type="button" data-count="1000000">1000000</button>
+      </span>
+    </div>
+
+    <div class="compare">
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <div class="bubble" id="msgBad"></div>
+        <div class="pager" id="pageBad"></div>
+        <div class="code" id="codeBad"></div>
+        <ul class="verdicts" id="verdictBad"></ul>
+      </div>
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <div class="bubble" id="msgGood"></div>
+        <div class="pager" id="pageGood"></div>
+        <div class="code" id="codeGood"></div>
+        <ul class="verdicts" id="verdictGood"></ul>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong><code>n === 1 ? one : plural</code></strong> encodes <em>English</em> plural rules. Polish and Russian need different forms for 2–4, 5+, 22 and 21; Arabic has six forms; French treats 0 as singular.</li>
+          <li><strong>“message(s)”</strong> is lazy in English and impossible to translate.</li>
+          <li><strong>Raw numbers</strong>: <code>1000000</code> instead of the locale's grouping.</li>
+          <li><strong>Concatenated sentence</strong> (<code>t('page') + n + t('of') + total</code>) bakes in English word order: in Japanese it becomes nonsense.</li>
+          <li>Arabic text rendered without <code>dir="rtl"</code>.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>ICU MessageFormat plurals</strong>: translators write as many forms as their language needs; <code>Intl.PluralRules</code> picks the category from CLDR rules.</li>
+          <li><strong>Whole sentences with named placeholders</strong>: the Japanese translator puts <code>{total}</code> before <code>{current}</code>.</li>
+          <li><strong>Numbers formatted</strong> with <code>Intl.NumberFormat</code> inside the message (<code>#</code>).</li>
+          <li><strong><code>lang</code> and <code>dir</code></strong> set on the translated content.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">ICU MessageFormat</span>
+      <span class="tag">CLDR plural categories</span>
+      <span class="tag">No concatenation</span>
+      <span class="tag">Named placeholders</span>
+      <span class="tag">Intl.PluralRules / NumberFormat</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 2: FORMATTING & TIME ZONES                                -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex2" aria-labelledby="ex2-title">
+    <h2 id="ex2-title">2. The order page that's only right in New York</h2>
+    <p class="scenario">
+      Try it: switch the locale to Deutsch, 日本語 (imperial era), ไทย and العربية (مصر); the currency to JPY, VND and KWD;
+      the time zone to Kathmandu or Adelaide. Labels stay in English on purpose, so you can focus on <em>formatting</em>.
+    </p>
+    <div class="controls">
+      <label>Locale
+        <select id="loc2">
+          <option value="en-US">English (US) · en-US</option>
+          <option value="en-GB">English (UK) · en-GB</option>
+          <option value="en-IN">English (India) · en-IN</option>
+          <option value="de-DE" selected>Deutsch · de-DE</option>
+          <option value="de-CH">Deutsch (Schweiz) · de-CH</option>
+          <option value="fr-FR">Français · fr-FR</option>
+          <option value="ja-JP">日本語 · ja-JP</option>
+          <option value="ja-JP-u-ca-japanese">日本語 (和暦) · ja-JP-u-ca-japanese</option>
+          <option value="vi-VN">Tiếng Việt · vi-VN</option>
+          <option value="th-TH">ไทย · th-TH</option>
+          <option value="ar-EG">العربية (مصر) · ar-EG</option>
+        </select>
+      </label>
+      <label>Currency
+        <select id="cur2">
+          <option value="USD">USD</option>
+          <option value="EUR" selected>EUR</option>
+          <option value="JPY">JPY</option>
+          <option value="VND">VND</option>
+          <option value="KWD">KWD</option>
+        </select>
+      </label>
+      <label>User's time zone
+        <select id="tz2">
+          <option value="America/New_York">America/New_York</option>
+          <option value="Europe/London">Europe/London</option>
+          <option value="Europe/Berlin" selected>Europe/Berlin</option>
+          <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh</option>
+          <option value="Asia/Kolkata">Asia/Kolkata (+5:30)</option>
+          <option value="Asia/Kathmandu">Asia/Kathmandu (+5:45)</option>
+          <option value="Australia/Adelaide">Australia/Adelaide (+10:30 in March)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="compare">
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <table class="order" id="orderBad"></table>
+        <ul class="verdicts" id="verdict2Bad"></ul>
+      </div>
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <table class="order" id="orderGood"></table>
+        <div class="code" id="code2"></div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Hand-written <code>MM/DD/YYYY</code></strong>: “03/04/2026” means 3 April to most of the world.</li>
+          <li><strong><code>"$" + amount.toFixed(2)</code></strong>: wrong symbol for every non-USD currency, “.00” on yen and dong (which have no minor unit), only 2 decimals for dinar (which has 3), no grouping.</li>
+          <li><strong>Times shown in the server's zone (UTC)</strong> with no zone label: the webinar time is wrong for almost everyone.</li>
+          <li><strong>“3 day(s)”</strong>, English list commas, kilometers for US users.</li>
+          <li>Ignores calendars (Thai Buddhist year 2569, Japanese era Reiwa 8) and native digits.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Machine values in, formatting at the edge</strong>: the API sends ISO 8601 UTC instants, ISO 4217 codes and minor units; the UI formats with <code>Intl</code>.</li>
+          <li><strong><code>Intl.DateTimeFormat</code></strong> with the user's <em>locale and IANA time zone</em>, and the zone shown for scheduled events.</li>
+          <li><strong><code>Intl.NumberFormat</code> with <code>style: 'currency'</code></strong>: symbol position, decimals per currency, grouping.</li>
+          <li><strong><code>RelativeTimeFormat</code>, <code>ListFormat</code>, unit formatting</strong> (plus unit <em>conversion</em> for US users).</li>
+          <li>Locale and currency are <strong>independent settings</strong>: try de-DE with USD.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Store machine values, format at display</span>
+      <span class="tag">UTC instants + IANA zones</span>
+      <span class="tag">ISO 4217 minor units</span>
+      <span class="tag">Locale ≠ currency ≠ time zone</span>
+      <span class="tag">CLDR</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 3: LAYOUT                                                 -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex3" aria-labelledby="ex3-title">
+    <h2 id="ex3-title">3. The settings screen designed for English only</h2>
+    <p class="scenario">
+      Try it: switch to Deutsch (long words), العربية (right-to-left), Tiếng Việt (stacked diacritics), 日本語 (different
+      word order), and <strong>Pseudo-localized</strong>, the developer's test language. In pseudo mode, any text without
+      [brackets] is hardcoded, and several bracketed pieces in one sentence reveal concatenation.
+    </p>
+    <div class="controls">
+      <label>Language
+        <select id="lang3">
+          <option value="en">English</option>
+          <option value="de" selected>Deutsch</option>
+          <option value="ar">العربية</option>
+          <option value="vi">Tiếng Việt</option>
+          <option value="ja">日本語</option>
+          <option value="pseudo">Pseudo-localized [Ƥšéûðö]</option>
+        </select>
+      </label>
+      <span class="expansion" id="expansion3"></span>
+    </div>
+
+    <div class="compare">
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <div class="mock mock-bad" id="mockBad"></div>
+      </div>
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <div class="mock mock-good" id="mockGood"></div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong>Fixed-width tabs and buttons</strong> sized for English: “Einstellungen” and “Änderungen speichern” are cut off.</li>
+          <li><strong>Fixed-height heading with <code>line-height: 1</code></strong>: Vietnamese marks (“Cài đặt tài khoản”) get clipped.</li>
+          <li><strong>Physical CSS</strong> (<code>text-align: left</code>, <code>left: .55rem</code>, <code>right: 0</code>): with <code>dir="rtl"</code> the text, icon and badge end up on the wrong sides, and the “Next” arrow points backwards.</li>
+          <li><strong>“C++ Primer (5th ed.)” not isolated</strong>, so the bidi algorithm scrambles its punctuation inside Arabic text.</li>
+          <li><strong>Concatenated sentence</strong>: German and Japanese verbs end up in the wrong place.</li>
+          <li><strong>“Cancel” is hardcoded</strong>: it never gets translated (pseudo mode shows it without brackets).</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Content-sized, wrapping layout</strong> (flexbox with <code>flex-wrap</code>, padding instead of widths).</li>
+          <li><strong>Generous line height</strong> and no fixed heights on text.</li>
+          <li><strong><code>lang</code> + <code>dir</code> attributes and CSS logical properties</strong> (<code>text-align: start</code>, <code>inset-inline-start</code>, <code>padding-inline</code>), so the whole layout mirrors automatically.</li>
+          <li><strong>Directional icons mirrored</strong> in RTL (<code>[dir=rtl] .flip { transform: scaleX(-1) }</code>).</li>
+          <li><strong><code>&lt;bdi&gt;</code></strong> around user names and product titles.</li>
+          <li><strong>One message per sentence</strong> with placeholders, and every string from the catalog.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Text expansion</span>
+      <span class="tag">Pseudo-localization</span>
+      <span class="tag">RTL mirroring</span>
+      <span class="tag">CSS logical properties</span>
+      <span class="tag">Bidi isolation (&lt;bdi&gt;)</span>
+      <span class="tag">lang attribute</span>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- EXAMPLE 4: UNICODE TEXT                                           -->
+  <!-- ================================================================ -->
+  <section class="example" id="ex4" aria-labelledby="ex4-title">
+    <h2 id="ex4-title">4. Names, search, sorting and emoji: Unicode text handling</h2>
+    <p class="scenario">
+      Try it: type your own name, search for <code>nguyen</code> or <code>José</code>, switch the sort order to Svenska
+      or Tiếng Việt, and change the preview limit. One contact was saved in decomposed Unicode (NFD), as happens with
+      text from some keyboards, file systems and copy-paste sources.
+    </p>
+    <div class="controls">
+      <label>Your name <input type="text" id="name4" value="Nguyễn Văn An" autocomplete="off"></label>
+      <label>Search contacts <input type="text" id="q4" value="nguyen" autocomplete="off"></label>
+      <span class="quick" aria-label="Quick searches">Try:
+        <button type="button" data-q="nguyen">nguyen</button><button type="button" data-q="duc">duc</button>
+        <button type="button" data-q="José">José</button><button type="button" data-q="muller">muller</button>
+        <button type="button" data-q="soren">soren</button><button type="button" data-q="bich ngoc">bich ngoc</button>
+      </span>
+    </div>
+    <div class="controls">
+      <label>Sort as
+        <select id="coll4">
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+          <option value="sv">Svenska</option>
+          <option value="vi">Tiếng Việt</option>
+        </select>
+      </label>
+      <label>Preview text <input type="text" id="text4" autocomplete="off"></label>
+      <label>Max characters <input type="number" id="max4" value="10" min="1" max="40"></label>
+    </div>
+
+    <div class="compare">
+      <div class="panel bad">
+        <p class="badge">✗ BAD</p>
+        <div class="sub"><h4>Sign-up: is this name valid?</h4><ul class="namelist" id="namesBad"></ul></div>
+        <div class="sub"><h4>Search results</h4><ul class="hits" id="hitsBad"></ul></div>
+        <div class="sub"><h4>Sorted (<code>array.sort()</code>)</h4><ul class="sorted" id="sortBad"></ul></div>
+        <div class="sub"><h4>Message preview</h4><div class="preview" id="prevBad"></div><div class="counter" id="cntBad"></div></div>
+      </div>
+      <div class="panel good">
+        <p class="badge">✓ GOOD</p>
+        <div class="sub"><h4>Sign-up: is this name valid?</h4><ul class="namelist" id="namesGood"></ul></div>
+        <div class="sub"><h4>Search results</h4><ul class="hits" id="hitsGood"></ul></div>
+        <div class="sub"><h4>Sorted (<code>Intl.Collator</code>)</h4><ul class="sorted" id="sortGood"></ul></div>
+        <div class="sub"><h4>Message preview</h4><div class="preview" id="prevGood"></div><div class="counter" id="cntGood"></div></div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="problems">
+        <h3>What's wrong</h3>
+        <ul>
+          <li><strong><code>/^[A-Za-z ]+$/</code> name validation</strong> rejects Nguyễn, O'Brien, José, 李小龙, محمد: most people on Earth.</li>
+          <li><strong><code>toLowerCase().includes()</code> search</strong>: “nguyen” doesn't find “Nguyễn”, and even typing “José” exactly fails because the stored copy is NFD.</li>
+          <li><strong><code>array.sort()</code> sorts by code unit</strong>: uppercase before lowercase, accented letters after “z”, regardless of language.</li>
+          <li><strong><code>.length</code> and <code>.slice()</code></strong> count UTF-16 code units: the counter is wrong and truncation can cut an emoji in half (�).</li>
+          <li>Not shown but related: <strong>Enter-to-send while an IME is composing</strong> (Japanese/Chinese input) sends half-typed messages. Check <code>event.isComposing</code>.</li>
+        </ul>
+      </div>
+      <div class="fixes">
+        <h3>How it's fixed</h3>
+        <ul>
+          <li><strong>Permissive validation</strong>: non-empty, ≤ 100 graphemes, no control characters (<code>\p{Cc}</code>).</li>
+          <li><strong>Normalize + fold for search</strong>: NFD, strip combining marks, map <code>đ→d</code>, <code>ø→o</code> (they don't decompose), lower-case. In production: search-engine ICU/ASCII-folding analyzers.</li>
+          <li><strong><code>Intl.Collator(locale)</code></strong>: Swedish puts Å Ä Ö after Z; Vietnamese puts Đ after D.</li>
+          <li><strong><code>Intl.Segmenter</code></strong> counts and cuts by grapheme (what people see as one character), and shows code units and UTF-8 bytes for DB limits.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="principles">
+      Principles:
+      <span class="tag">Unicode normalization (NFC/NFD)</span>
+      <span class="tag">Grapheme clusters</span>
+      <span class="tag">Locale-aware collation</span>
+      <span class="tag">Accent-insensitive search</span>
+      <span class="tag">Falsehoods about names</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Companion to <a href="README.md">the Internationalization README</a>. Output depends on your browser's CLDR/ICU version,
+  so details may differ slightly between browsers.
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fill = (tpl, vars) => tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k]);
+
+// =====================================================================
+// Example 1: plurals & concatenation
+// =====================================================================
+const MSG = {
+  en: { forms: { one: 'You have # new message', other: 'You have # new messages' },
+        page: 'Page {current} of {total}', words: { page: 'Page', of: 'of' },
+        bad: { one: 'You have {n} new message(s)', plural: 'You have {n} new message(s)' } },
+  fr: { forms: { one: 'Vous avez # nouveau message', many: 'Vous avez # nouveaux messages', other: 'Vous avez # nouveaux messages' },
+        page: 'Page {current} sur {total}', words: { page: 'Page', of: 'sur' },
+        bad: { one: 'Vous avez {n} nouveau message', plural: 'Vous avez {n} nouveaux messages' } },
+  pl: { forms: { one: 'Masz # nową wiadomość', few: 'Masz # nowe wiadomości', many: 'Masz # nowych wiadomości', other: 'Masz # nowej wiadomości' },
+        page: 'Strona {current} z {total}', words: { page: 'Strona', of: 'z' },
+        bad: { one: 'Masz {n} nową wiadomość', plural: 'Masz {n} nowych wiadomości' } },
+  ru: { forms: { one: 'У вас # новое сообщение', few: 'У вас # новых сообщения', many: 'У вас # новых сообщений', other: 'У вас # нового сообщения' },
+        page: 'Страница {current} из {total}', words: { page: 'Страница', of: 'из' },
+        bad: { one: 'У вас {n} новое сообщение', plural: 'У вас {n} новых сообщений' } },
+  ar: { dir: 'rtl',
+        forms: { zero: 'ليس لديك رسائل جديدة', one: 'لديك رسالة جديدة واحدة', two: 'لديك رسالتان جديدتان',
+                 few: 'لديك # رسائل جديدة', many: 'لديك # رسالة جديدة', other: 'لديك # رسالة جديدة' },
+        page: 'الصفحة {current} من {total}', words: { page: 'الصفحة', of: 'من' },
+        bad: { one: 'لديك {n} رسالة جديدة', plural: 'لديك {n} رسائل جديدة' } },
+  ja: { forms: { other: '新着メッセージが#件あります' },
+        page: '{total}ページ中{current}ページ目', words: { page: 'ページ', of: 'の' },
+        bad: { one: '新着メッセージが{n}件あります', plural: '新着メッセージが{n}件あります' } },
+  vi: { forms: { other: 'Bạn có # tin nhắn mới' },
+        page: 'Trang {current} trên {total}', words: { page: 'Trang', of: 'trên' },
+        bad: { one: 'Bạn có {n} tin nhắn mới', plural: 'Bạn có {n} tin nhắn mới' } },
+};
+const LANG_NAMES = { en: 'English', fr: 'French', pl: 'Polish', ru: 'Russian', ar: 'Arabic', ja: 'Japanese', vi: 'Vietnamese' };
+
+function renderEx1() {
+  const lang = $('lang1').value;
+  const n = Math.max(0, Math.floor(Number($('count1').value) || 0));
+  const m = MSG[lang];
+  const current = 3, total = 10;
+
+  // ---- bad: English plural logic, raw numbers, concatenation ----
+  const badTpl = n === 1 ? m.bad.one : m.bad.plural;
+  const badText = badTpl.replace('{n}', String(n));
+  const badPage = m.words.page + ' ' + current + ' ' + m.words.of + ' ' + total;
+  $('msgBad').textContent = badText;
+  $('pageBad').textContent = badPage;
+  $('codeBad').innerHTML =
+    `<span class="k">const</span> msg = n === 1 ? t('msg_one') : t('msg_plural');\n` +
+    `text = msg.replace('{n}', n);\n` +
+    `pager = t('page') + ' ' + 3 + ' ' + t('of') + ' ' + 10;`;
+
+  // ---- good: CLDR plural rules + formatted number + whole message ----
+  const nf = new Intl.NumberFormat(lang);
+  const category = new Intl.PluralRules(lang).select(n);
+  const goodTpl = m.forms[category] ?? m.forms.other;
+  const goodText = goodTpl.replace('#', nf.format(n));
+  const goodPage = fill(m.page, { current: nf.format(current), total: nf.format(total) });
+  for (const id of ['msgGood', 'pageGood']) { $(id).lang = lang; $(id).dir = m.dir || 'ltr'; }
+  $('msgGood').textContent = goodText;
+  $('pageGood').textContent = goodPage;
+  const icu = `{count, plural,\n` + Object.entries(m.forms).map(([k, v]) => `  ${k.padEnd(5)} {${v}}`).join('\n') + `}`;
+  $('codeGood').innerHTML = `<span class="k">// ${lang}.json: written by the translator</span>\n${esc(icu)}\n\n` +
+    `<span class="k">// "${lang}.page"</span>\n${esc(m.page)}`;
+
+  // ---- verdicts ----
+  const v = [];
+  if (lang === 'en') v.push(['x', '“message(s)”: the code never chose a plural form at all.']);
+  else if (badTpl.replace('{n}', '#') !== goodTpl) v.push(['x', `Wrong grammatical form: ${LANG_NAMES[lang]} uses the “${category}” form for ${n}, but the code only knows “one” vs “not one”.`]);
+  if (String(n) !== nf.format(n)) v.push(['x', `Number not formatted for the locale: “${n}” instead of “${nf.format(n)}”.`]);
+  if (badPage !== goodPage) v.push(['x', `Concatenation broke the word order: should be “${goodPage}”.`]);
+  if (m.dir === 'rtl') v.push(['x', 'Arabic text shown without dir="rtl", so it is aligned and ordered as if it were left-to-right.']);
+  if (!v.length) v.push(['w', 'Happens to look right for this language and number. Bugs like this survive testing in English. Try other values.']);
+  $('verdictBad').innerHTML = v.map(([c, t]) => `<li class="${c}">${esc(t)}</li>`).join('');
+  $('verdictGood').innerHTML = `<li class="ok">Intl.PluralRules('${lang}').select(${n}) → <span class="chip">${category}</span> · ${LANG_NAMES[lang]} uses: ${new Intl.PluralRules(lang).resolvedOptions().pluralCategories.join(', ')}</li>`;
+}
+$('lang1').addEventListener('change', renderEx1);
+$('count1').addEventListener('input', renderEx1);
+document.querySelectorAll('[data-count]').forEach(b => b.addEventListener('click', () => { $('count1').value = b.dataset.count; renderEx1(); }));
+renderEx1();
+
+// =====================================================================
+// Example 2: dates, money, time zones
+// =====================================================================
+// What the API sends: machine values only.
+const ORDER = {
+  placedAt: '2026-03-04T09:30:00Z',          // ISO 8601 instant (UTC)
+  webinarAt: '2026-03-29T14:00:00Z',         // a scheduled live event
+  items: ['Headphones', 'Charger', 'Case'],
+  units: 1500,
+  deliveryInDays: 3,
+  distanceKm: 12.5,
+  totals: { USD: 1234.5, EUR: 1149.9, JPY: 185000, VND: 32500000, KWD: 380.25 },
+};
+const pad = n => String(n).padStart(2, '0');
+
+function renderEx2() {
+  const loc = $('loc2').value, cur = $('cur2').value, tz = $('tz2').value;
+  const placed = new Date(ORDER.placedAt), webinar = new Date(ORDER.webinarAt);
+  const amount = ORDER.totals[cur];
+
+  // ---- bad: hand-written formats, server time zone (UTC), US-only assumptions ----
+  const usDate = d => `${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCDate())}/${d.getUTCFullYear()}`;
+  const badRows = [
+    ['Order placed', `${usDate(placed)} ${pad(placed.getUTCHours())}:${pad(placed.getUTCMinutes())}`],
+    ['Items', ORDER.items.join(', ')],
+    ['Quantity', `${ORDER.units} units`],
+    ['Total', '$' + amount.toFixed(2)],
+    ['Delivery', `in ${ORDER.deliveryInDays} day(s)`],
+    ['Distance to store', `${ORDER.distanceKm} km`],
+    ['Live webinar starts', `${usDate(webinar)} ${pad(webinar.getUTCHours())}:${pad(webinar.getUTCMinutes())}`],
+  ];
+  $('orderBad').innerHTML = badRows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${esc(v)}</td></tr>`).join('');
+
+  // ---- good: Intl with the user's locale, currency and time zone ----
+  const isUS = /-US\b/.test(loc);
+  const dt = new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeStyle: 'short', timeZone: tz });
+  const webinarFmt = new Intl.DateTimeFormat(loc, { weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short' });
+  const distance = isUS
+    ? new Intl.NumberFormat(loc, { style: 'unit', unit: 'mile', maximumFractionDigits: 1 }).format(ORDER.distanceKm * 0.621371)
+    : new Intl.NumberFormat(loc, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 }).format(ORDER.distanceKm);
+  const goodRows = [
+    ['Order placed', dt.format(placed)],
+    ['Items', new Intl.ListFormat(loc, { type: 'conjunction' }).format(ORDER.items)],
+    ['Quantity', new Intl.NumberFormat(loc).format(ORDER.units)],
+    ['Total', new Intl.NumberFormat(loc, { style: 'currency', currency: cur }).format(amount)],
+    ['Delivery', new Intl.RelativeTimeFormat(loc, { numeric: 'auto' }).format(ORDER.deliveryInDays, 'day')],
+    ['Distance to store', distance],
+    ['Live webinar starts', webinarFmt.format(webinar)],
+  ];
+  $('orderGood').innerHTML = goodRows.map(([k, v]) => `<tr><th scope="row">${k}</th><td lang="${loc}" dir="auto">${esc(v)}</td></tr>`).join('');
+
+  const digits = new Intl.NumberFormat('en', { style: 'currency', currency: cur }).resolvedOptions().maximumFractionDigits;
+  $('code2').innerHTML =
+    `<span class="k">// API response (machine values)</span>\n` +
+    `{ "placedAt": "${ORDER.placedAt}", "total": { "amount_minor": ${Math.round(amount * 10 ** digits)}, "currency": "${cur}" } }\n\n` +
+    `<span class="k">// UI</span>\nnew Intl.NumberFormat('${loc}', { style: 'currency', currency: '${cur}' })\n` +
+    `new Intl.DateTimeFormat('${loc}', { dateStyle: 'medium', timeStyle: 'short', timeZone: '${tz}' })`;
+
+  // ---- what the bad version got wrong for this combination ----
+  const v = [];
+  if (!isUS) v.push(['x', `“${usDate(placed)}” is US month-first: most of the world reads it as 3 April. A ${loc} user expects “${new Intl.DateTimeFormat(loc, { timeZone: tz }).format(placed)}”.`]);
+  if (cur !== 'USD') v.push(['x', `Shows “$” for ${cur}.`]);
+  if (digits !== 2) v.push(['x', `${cur} has ${digits} decimal places (ISO 4217), not 2.`]);
+  v.push(['x', `Times are in the server's zone (UTC) with no label. The webinar is at ${new Intl.DateTimeFormat(loc, { hour: 'numeric', minute: '2-digit', timeZone: tz }).format(webinar)} for a user in ${tz}.`]);
+  const cal = new Intl.DateTimeFormat(loc).resolvedOptions().calendar;
+  if (cal !== 'gregory') v.push(['x', `This locale uses the ${cal} calendar: the year is ${new Intl.DateTimeFormat(loc, { year: 'numeric' }).format(placed)}, not 2026.`]);
+  const nu = new Intl.NumberFormat(loc).resolvedOptions().numberingSystem;
+  if (nu !== 'latn') v.push(['x', `This locale uses native digits (${nu}): ${new Intl.NumberFormat(loc).format(1234567890)}.`]);
+  if (isUS) v.push(['w', 'For a US user, distance should be in miles.']);
+  $('verdict2Bad').innerHTML = v.map(([c, t]) => `<li class="${c}">${esc(t)}</li>`).join('');
+}
+['loc2', 'cur2', 'tz2'].forEach(id => $(id).addEventListener('change', renderEx2));
+renderEx2();
+
+// =====================================================================
+// Example 3: layout, expansion, RTL, pseudo-localization
+// =====================================================================
+const S = {
+  en: { home: 'Home', orders: 'Orders', settings: 'Settings', title: 'Account settings', isNew: 'New',
+        desc: 'Changes apply to all your devices.', displayName: 'Display name', recent: 'Recent activity',
+        reviewed: 'reviewed', activity: '{user} reviewed {product}', save: 'Save changes', cancel: 'Cancel', next: 'Next' },
+  de: { home: 'Startseite', orders: 'Bestellungen', settings: 'Einstellungen', title: 'Kontoeinstellungen', isNew: 'Neu',
+        desc: 'Änderungen gelten für alle Ihre Geräte.', displayName: 'Anzeigename', recent: 'Letzte Aktivität',
+        reviewed: 'hat bewertet', activity: '{user} hat {product} bewertet', save: 'Änderungen speichern', cancel: 'Abbrechen', next: 'Weiter' },
+  ar: { dir: 'rtl', home: 'الرئيسية', orders: 'الطلبات', settings: 'الإعدادات', title: 'إعدادات الحساب', isNew: 'جديد',
+        desc: 'تُطبَّق التغييرات على جميع أجهزتك.', displayName: 'الاسم المعروض', recent: 'النشاط الأخير',
+        reviewed: 'راجع', activity: 'قام {user} بمراجعة {product}', save: 'حفظ التغييرات', cancel: 'إلغاء', next: 'التالي' },
+  vi: { home: 'Trang chủ', orders: 'Đơn hàng', settings: 'Cài đặt', title: 'Cài đặt tài khoản', isNew: 'Mới',
+        desc: 'Thay đổi được áp dụng trên tất cả thiết bị của bạn.', displayName: 'Tên hiển thị', recent: 'Hoạt động gần đây',
+        reviewed: 'đã đánh giá', activity: '{user} đã đánh giá {product}', save: 'Lưu thay đổi', cancel: 'Hủy', next: 'Tiếp theo' },
+  ja: { home: 'ホーム', orders: '注文履歴', settings: '設定', title: 'アカウント設定', isNew: '新着',
+        desc: '変更はすべてのデバイスに適用されます。', displayName: '表示名', recent: '最近のアクティビティ',
+        reviewed: 'がレビューしました', activity: '{user}さんが{product}をレビューしました', save: '変更を保存', cancel: 'キャンセル', next: '次へ' },
+};
+// Pseudo-localization: accents + ~40% padding + brackets, keeping {placeholders} intact.
+const ACCENTS = { a: 'å', b: 'ƀ', c: 'ç', d: 'ð', e: 'é', f: 'ƒ', g: 'ĝ', h: 'ĥ', i: 'î', j: 'ĵ', k: 'ķ', l: 'ļ', m: 'ɱ',
+  n: 'ñ', o: 'ö', p: 'þ', q: 'ǫ', r: 'ŕ', s: 'š', t: 'ţ', u: 'û', v: 'ṽ', w: 'ŵ', x: 'ẋ', y: 'ý', z: 'ž',
+  A: 'Å', B: 'Ɓ', C: 'Ç', D: 'Ð', E: 'É', F: 'Ƒ', G: 'Ĝ', H: 'Ĥ', I: 'Î', J: 'Ĵ', K: 'Ķ', L: 'Ļ', M: 'Ṁ',
+  N: 'Ñ', O: 'Ö', P: 'Þ', Q: 'Ǫ', R: 'Ŕ', S: 'Š', T: 'Ţ', U: 'Û', V: 'Ṽ', W: 'Ŵ', X: 'Ẋ', Y: 'Ý', Z: 'Ž' };
+function pseudo(s) {
+  const body = s.split(/(\{\w+\})/).map(p => (p.startsWith('{') ? p : [...p].map(c => ACCENTS[c] || c).join(''))).join('');
+  const visible = s.replace(/\{\w+\}/g, '');
+  return `[${body} ${'~'.repeat(Math.max(1, Math.round(visible.length * 0.4)))}]`;
+}
+S.pseudo = Object.fromEntries(Object.entries(S.en).map(([k, v]) => [k, pseudo(v)]));
+
+const ARROW = '<svg class="arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+const SEARCH = '<svg class="icon arrow" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="#52606d" stroke-width="2"/><path d="M10.5 10.5 14 14" stroke="#52606d" stroke-width="2"/></svg>';
+const USER = 'Lan', PRODUCT = 'C++ Primer (5th ed.)';
+
+function renderEx3() {
+  const lang = $('lang3').value;
+  const t = S[lang];
+  const dir = t.dir || 'ltr';
+  const htmlLang = lang === 'pseudo' ? 'en' : lang;
+
+  // ---- bad: adds dir for RTL, but sizes and positions are physical and fixed ----
+  const bad = $('mockBad');
+  bad.setAttribute('dir', dir);           // "we support RTL now!"... without changing any CSS
+  bad.removeAttribute('lang');            // no lang: wrong fonts, line breaking and pronunciation
+  bad.innerHTML = `
+    <div class="tabs"><span class="tab">${esc(t.home)}</span><span class="tab">${esc(t.orders)}</span><span class="tab">${esc(t.settings)}</span></div>
+    <div class="title-row"><h3>${esc(t.title)}</h3><span class="new">${esc(t.isNew)}</span></div>
+    <p>${esc(t.desc)}</p>
+    <div class="field"><label>${esc(t.displayName)}</label>${SEARCH}<input type="text" value="Lan Nguyễn" aria-label="Display name (bad version)"></div>
+    <div class="activity"><strong>${esc(t.recent)}:</strong> ${esc(USER + ' ' + t.reviewed + ' ' + PRODUCT)}</div>
+    <div class="actions"><button type="button">Cancel</button><button type="button" class="primary">${esc(t.save)}</button></div>
+    <div class="next">${esc(t.next)} ${ARROW}</div>`;
+
+  // ---- good: lang + dir, logical properties, flexible sizes, bidi isolation, whole messages ----
+  const good = $('mockGood');
+  good.setAttribute('dir', dir);
+  good.setAttribute('lang', htmlLang);
+  const activity = esc(t.activity)
+    .replace('{user}', `<bdi>${esc(USER)}</bdi>`)
+    .replace('{product}', `<bdi>${esc(PRODUCT)}</bdi>`);
+  good.innerHTML = `
+    <div class="tabs"><span class="tab">${esc(t.home)}</span><span class="tab">${esc(t.orders)}</span><span class="tab">${esc(t.settings)}</span></div>
+    <div class="title-row"><h3>${esc(t.title)}</h3><span class="new">${esc(t.isNew)}</span></div>
+    <p>${esc(t.desc)}</p>
+    <div class="field"><label for="dn3">${esc(t.displayName)}</label>${SEARCH}<input type="text" id="dn3" value="Lan Nguyễn" dir="auto"></div>
+    <div class="activity"><strong>${esc(t.recent)}:</strong> ${activity}</div>
+    <div class="actions"><button type="button">${esc(t.cancel)}</button><button type="button" class="primary">${esc(t.save)}</button></div>
+    <div class="next">${esc(t.next)} <span class="flip" style="display:inline-block">${ARROW}</span></div>`;
+
+  const keys = ['home', 'orders', 'settings', 'title', 'desc', 'displayName', 'save', 'cancel', 'next'];
+  const len = o => keys.reduce((s, k) => s + [...o[k]].length, 0);
+  const diff = Math.round((len(t) / len(S.en) - 1) * 100);
+  $('expansion3').textContent = lang === 'en' ? 'Total UI text length: baseline (English).'
+    : `Total UI text length vs English: ${diff >= 0 ? '+' : ''}${diff}% · direction: ${dir.toUpperCase()}`;
+}
+$('lang3').addEventListener('change', renderEx3);
+renderEx3();
+
+// =====================================================================
+// Example 4: Unicode text handling
+// =====================================================================
+const NAMES = ['Nguyễn Văn An', "O'Brien", 'José María', 'Zoë', '李小龙', 'محمد', 'Anne-Marie'];
+const CONTACTS = ['Nguyễn Văn An', 'Trần Thị Bích Ngọc', 'Đặng Minh Đức',
+  'José Álvarez',           // stored decomposed (NFD): looks identical to "José"
+  'Zoë Saldaña', 'Søren Kierkegaard', 'François Dubois', 'Jürgen Müller'];
+const WORDS = ['zebra', 'Ångström', 'apple', 'Äpfel', 'Österreich', 'Zürich', 'Émile', 'eagle', 'Đà Nẵng', 'Dallas', 'Banana'];
+$('text4').value = 'Nhà mình 👨‍👩‍👧‍👦 vui quá 🇻🇳';
+
+const graphemes = (s, loc = 'vi') => (typeof Intl.Segmenter === 'function'
+  ? [...new Intl.Segmenter(loc, { granularity: 'grapheme' }).segment(s)].map(x => x.segment)
+  : [...s]);
+// Accent- and case-insensitive search key.
+function fold(s) {
+  return s.normalize('NFD').replace(/\p{M}/gu, '')
+    .replace(/[đĐ]/g, 'd').replace(/[øØ]/g, 'o').replace(/[łŁ]/g, 'l').replace(/ß/g, 'ss')
+    .toLowerCase();
+}
+const badNameOk = s => /^[A-Za-z]+( [A-Za-z]+)*$/.test(s.trim());
+function goodNameOk(s) {
+  const t = s.trim().normalize('NFC');
+  return t.length > 0 && graphemes(t).length <= 100 && !/\p{Cc}/u.test(t);
+}
+
+function renderEx4() {
+  const own = $('name4').value;
+  const names = own.trim() ? [own, ...NAMES.filter(n => n !== own)] : NAMES;
+  const row = (n, ok, own) => `<li><span>${esc(n)}${own ? ' <em style="color:var(--muted)">(you)</em>' : ''}</span>${ok ? '<span class="acc">✓ accepted</span>' : '<span class="rej">✗ “Invalid name”</span>'}</li>`;
+  $('namesBad').innerHTML = names.map((n, i) => row(n, badNameOk(n), own.trim() && i === 0)).join('');
+  $('namesGood').innerHTML = names.map((n, i) => row(n, goodNameOk(n), own.trim() && i === 0)).join('');
+
+  const q = $('q4').value;
+  const list = hits => hits.length ? hits.map(h => `<li>${esc(h.normalize('NFC'))}</li>`).join('') : '<li class="none">No contacts found</li>';
+  $('hitsBad').innerHTML = q.trim() ? list(CONTACTS.filter(c => c.toLowerCase().includes(q.toLowerCase()))) : '';
+  $('hitsGood').innerHTML = q.trim() ? list(CONTACTS.filter(c => fold(c).includes(fold(q.trim())))) : '';
+
+  const coll = $('coll4').value;
+  $('sortBad').innerHTML = [...WORDS].sort().map(w => `<li>${esc(w)}</li>`).join('');
+  $('sortGood').innerHTML = [...WORDS].sort(new Intl.Collator(coll).compare).map(w => `<li lang="${coll}">${esc(w)}</li>`).join('');
+
+  const text = $('text4').value;
+  const max = Math.max(1, Number($('max4').value) || 1);
+  $('prevBad').textContent = text.length > max ? text.slice(0, max) + '…' : text;
+  $('cntBad').textContent = `${text.length} / ${max} characters (counted with .length)`;
+  const g = graphemes(text);
+  $('prevGood').textContent = g.length > max ? g.slice(0, max).join('') + '…' : text;
+  $('cntGood').textContent = `${g.length} / ${max} characters (graphemes) · ${[...text].length} code points · ${text.length} UTF-16 units · ${new TextEncoder().encode(text).length} UTF-8 bytes`;
+}
+['name4', 'q4', 'text4', 'max4'].forEach(id => $(id).addEventListener('input', renderEx4));
+$('coll4').addEventListener('change', renderEx4);
+document.querySelectorAll('[data-q]').forEach(b => b.addEventListener('click', () => { $('q4').value = b.dataset.q; renderEx4(); }));
+renderEx4();
+</script>
+</body>
+</html>

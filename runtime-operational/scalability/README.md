@@ -33,8 +33,10 @@ Related: [Performance](../performance/README.md) (how fast is it *for one reques
 18. [Approaches by system type](#18-approaches-by-system-type)
 19. [Trade-offs](#19-trade-offs)
 20. [Anti-patterns](#20-anti-patterns)
-21. [Checklist](#21-checklist)
-22. [Further reading](#22-further-reading)
+21. [Real-world scaling stories](#21-real-world-scaling-stories)
+22. [Checklist](#22-checklist)
+23. [Exercises](#23-exercises)
+24. [Further reading](#24-further-reading)
 
 ---
 
@@ -82,6 +84,26 @@ L = λ × W
 in-flight requests = arrival rate × time in system
 1,000 RPS × 0.2 s latency = 200 concurrent requests → size thread/connection pools accordingly
 ```
+
+### 1.4 Worked example: when adding servers stops helping
+
+A service measured under load test fits the USL with **α = 0.05** (5% contention, e.g. a shared DB lock) and **β = 0.001** (small coordination cost between nodes, e.g. cache invalidation messages):
+
+| Nodes (N) | Relative throughput C(N) | Per-node efficiency |
+|---|---|---|
+| 1 | 1.0 | 100% |
+| 8 | 5.7 | 71% |
+| 16 | 8.0 | 50% |
+| 32 | 9.0 | 28% |
+| 64 | **7.8** | 12% |
+
+Peak throughput is at `N* = √((1 − α) / β) ≈ 31` nodes. **Beyond that, adding servers makes the system slower**, and you pay more for less.
+
+What helps:
+- Lower **α**: remove the shared bottleneck (shard the hot table, replace a global lock with per-key locks, use queues).
+- Lower **β**: remove node-to-node chatter (avoid broadcast invalidation, avoid cross-node transactions, partition so nodes don't need to talk).
+
+Practical takeaway: load test at several sizes (1, 2, 4, 8 nodes), fit the curve, and you'll know your ceiling **before** production finds it.
 
 ---
 
@@ -473,6 +495,31 @@ Tips:
 - Track growth trends; forecast 6–12 months ahead for things that take long to provision (DB clusters, reserved capacity, partitions).
 - Know your **limits**: cloud quotas, max connections, file descriptors, partition counts, IP addresses, API rate limits of third parties.
 
+### 15.3 Worked example: autoscaling into the database wall
+
+An API normally runs on **5 instances**, each with a DB connection pool of **20** → 100 connections. Postgres has `max_connections = 200`.
+
+A traffic spike arrives and the autoscaler goes to **40 instances**:
+
+```
+40 × 20 = 800 connections wanted  >  200 allowed
+→ "too many connections" errors, and the existing connections slow down
+  (each Postgres connection is a process using memory and CPU)
+```
+
+The spike made the app tier bigger and the system **less** available.
+
+How many connections does the DB actually need? Use Little's Law:
+
+```
+3,000 queries/s × 5 ms average query time = 15 queries in flight
+```
+
+So about **15–30 busy connections** is enough for the whole fleet. The fix:
+- Put **PgBouncer** (transaction pooling) or RDS Proxy between the app and the DB: 800 client connections → ~30 server connections.
+- Cap the autoscaler's `max` to what downstream systems can handle.
+- Scale on a metric that reflects the real bottleneck, not just app CPU.
+
 ---
 
 ## 16. Scaling patterns for specific problems
@@ -682,7 +729,26 @@ Stage 10 – Cells
 
 ---
 
-## 21. Checklist
+## 21. Real-world scaling stories
+
+Most scaling stories are about **finding the next bottleneck**, usually the database, and fixing *only that*.
+
+| Company / event | What happened | Lesson |
+|---|---|---|
+| **Twitter "Fail Whale" (2008–2010)** | A Ruby on Rails monolith on MySQL often went down under load, especially during big events. Twitter moved the hot paths to JVM services and precomputed timelines in in-memory caches (fan-out on write), with a hybrid approach for celebrities. | The hard part was **fan-out**, not writes (§1.1, §16.1). |
+| **Stack Overflow** | For years it served a top-100 website from a handful of well-tuned web servers and a big SQL Server pair, with heavy caching. | Vertical scaling + good queries + caching go a very long way (§3). |
+| **Instagram (2011–2012)** | A very small team scaled to tens of millions of users on PostgreSQL. They sharded into **thousands of logical shards** mapped onto a few physical servers, and generated time-sortable 64-bit IDs inside Postgres. | Pre-split into many logical shards so rebalancing means moving shards, not rows (§10.1, §16.3). |
+| **Healthcare.gov launch (Oct 2013)** | The US health insurance site failed on launch day under far more load than it was tested for. Only a handful of people completed sign-up on the first day. | Load test end to end, early, at realistic peak (§15.2). |
+| **Pokémon GO launch (Jul 2016)** | Traffic reached about **50× the original target**, and roughly 10× the worst-case estimate. It ran on Google Cloud, and Google engineers helped scale it live. | Estimates can be wrong by an order of magnitude. Have an elastic design plus admission control. |
+| **Discord messages (2017 → 2022)** | Messages moved from MongoDB to **Cassandra**, partitioned by channel + time bucket. Later, hot partitions and GC pauses led to a move to **ScyllaDB** with Rust "data services" that **coalesce** identical concurrent requests. | Shard key design and hot partitions dominate at trillions of rows (§10.2, §18.5). |
+| **Notion (2021)** | A single Postgres instance was close to its limits. They sharded by workspace into **480 logical shards** on 32 physical databases, then migrated live with double writes and verification. | Shard by the tenant-like key that matches access patterns. Plan the migration as carefully as the design. |
+| **Figma (2023–2024)** | First split tables into separate databases by domain (**vertical partitioning**), then built **horizontal sharding** on Postgres with a proxy layer that routes queries by shard key. | Follow the §8 path step by step. Sharding was the last step, not the first. |
+
+Common threads: **one database got them surprisingly far**, the bottleneck was usually **data** (not app servers), and the companies that scaled well did it in **steps** with measurement at each one.
+
+---
+
+## 22. Checklist
 
 **Understand**
 - [ ] Load parameters identified (RPS, read/write ratio, data size, fan-out, skew)
@@ -717,7 +783,22 @@ Stage 10 – Cells
 
 ---
 
-## 22. Further reading
+## 23. Exercises
+
+1. **Estimate a chat app.** 50M DAU, each sends 40 messages/day of 200 bytes, and each message is read by 3 people on average. Compute average and peak write RPS, read RPS, storage per year (with 3× replication) and bandwidth. Which component needs scaling first? (§2)
+2. **Cache math.** A product page gets 200k RPS and each cache miss costs one DB query. The DB handles 15k QPS. What's the minimum hit ratio? What happens to the DB if the cache cluster restarts empty? Propose two protections (§6).
+3. **USL.** Your load tests give: 1 node = 1,000 RPS, 4 nodes = 3,200 RPS, 16 nodes = 7,500 RPS. Is this linear? Where would you look for contention vs coordination costs? (§1.3, §1.4)
+4. **Rehashing.** You have 1M keys on 4 cache nodes using `hash(key) mod N`. You add a 5th node. Roughly how many keys move? How many with consistent hashing? (§10.1)
+5. **Shard key choice.** Pick a shard key for: (a) orders in an e-commerce site, (b) messages in a chat app, (c) IoT sensor readings, (d) a multi-tenant SaaS where one tenant is 30% of the data. For each, name the query that becomes a scatter–gather and how you'd handle it (§10.2).
+6. **Fan-out.** A celebrity with 50M followers posts. With fan-out on write at 100k timeline writes/s, how long until every follower has it? Design the hybrid approach and decide on the follower threshold (§16.1).
+7. **Connection math.** 30 app instances, pool size 25 each, Postgres `max_connections = 300`, 4,000 queries/s at 8 ms average. What happens when autoscaling adds 10 more instances? How many connections are actually needed? (§15.3)
+8. **Kafka partitions.** A topic gets 60k events/s and one consumer handles 4k/s. How many partitions do you need now? What about in 2 years at 3× traffic? Why can't you just add partitions later without thinking? (§12)
+9. **Scaling plan.** A WordPress news site goes from 10k to 5M daily visitors. Using §8 and §17, list in order the changes you'd make, and the metric that tells you each one is needed.
+10. **Read a scaling story** from §21 (Notion, Figma and Discord all have detailed engineering blog posts). Identify the bottleneck, the options they considered, and why they rejected the alternatives.
+
+---
+
+## 24. Further reading
 
 - *Designing Data-Intensive Applications* (Kleppmann) — ch. 1 (scalability), 5 (replication), 6 (partitioning), 11 (stream processing)
 - *The Art of Scalability* (Abbott & Fisher) — the AKF scale cube
