@@ -70,6 +70,17 @@ Detailed notes:
 - [Safety](safety/safety/README.md)
 - [Fail-safe](safety/fail-safe/README.md)
 - [Hazard warning](safety/hazard-warning/README.md)
+- [How search works](SEO-optimize/how-search-works/README.md)
+- [Crawlability](SEO-optimize/crawlability/README.md)
+- [Indexability](SEO-optimize/indexability/README.md)
+- [Site architecture](SEO-optimize/site-architecture/README.md)
+- [Page experience](SEO-optimize/page-experience/README.md)
+- [On-page relevance](SEO-optimize/on-page-relevance/README.md)
+- [Structured data](SEO-optimize/structured-data/README.md)
+- [Authority (links)](SEO-optimize/authority/README.md)
+- [International SEO](SEO-optimize/international-seo/README.md)
+- [Local SEO](SEO-optimize/local-seo/README.md)
+- [SEO monitoring](SEO-optimize/seo-monitoring/README.md)
 
 ---
 
@@ -83,8 +94,9 @@ Detailed notes:
 6. [UI / UX](#6-ui--ux)
 7. [Business / Project](#7-business--project)
 8. [Safety (critical systems)](#8-safety-critical-systems)
-9. [Common trade-offs](#9-common-trade-offs)
-10. [Priorities for large-scale products](#10-priorities-for-large-scale-products)
+9. [SEO (search engine optimization)](#9-seo-search-engine-optimization)
+10. [Common trade-offs](#10-common-trade-offs)
+11. [Priorities for large-scale products](#11-priorities-for-large-scale-products)
 
 ---
 
@@ -203,7 +215,27 @@ Qualities from the user's perspective.
 
 ---
 
-## 9. Common trade-offs
+## 9. SEO (search engine optimization)
+
+How easily people find the system through search engines. Most of it is engineering (crawling, rendering, speed, URLs), not marketing.
+
+| Attribute | Meaning |
+|---|---|
+| [**How search works**](SEO-optimize/how-search-works/README.md) | The crawl → index → rank pipeline that every other row feeds |
+| [**Crawlability**](SEO-optimize/crawlability/README.md) | Bots can discover and fetch the pages (robots.txt, sitemaps, server health) |
+| [**Indexability**](SEO-optimize/indexability/README.md) | Fetched pages are rendered and stored, one canonical version each |
+| [**Site architecture**](SEO-optimize/site-architecture/README.md) | Clean URLs, internal links, safe redirects and migrations |
+| [**Page experience**](SEO-optimize/page-experience/README.md) | Fast, stable, mobile-friendly pages (Core Web Vitals, CDN, server location) |
+| [**On-page relevance**](SEO-optimize/on-page-relevance/README.md) | Content matches what searchers want (intent, titles, quality) |
+| [**Structured data**](SEO-optimize/structured-data/README.md) | Machine-readable facts (schema.org) for rich results |
+| [**Authority (links)**](SEO-optimize/authority/README.md) | Other sites vouch for this one (backlinks, PageRank) |
+| [**International SEO**](SEO-optimize/international-seo/README.md) | The right language/country version reaches each user (hreflang) |
+| [**Local SEO**](SEO-optimize/local-seo/README.md) | Shows up for "near me" and map searches |
+| [**SEO monitoring**](SEO-optimize/seo-monitoring/README.md) | Search Console, crawl logs and CI checks catch regressions |
+
+---
+
+## 10. Common trade-offs
 
 Quality attributes often conflict with each other:
 
@@ -211,10 +243,11 @@ Quality attributes often conflict with each other:
 - **Security vs Usability**: more checks mean more friction
 - **Performance vs Maintainability**: heavy optimization makes code harder to read
 - **Cost vs Availability**: redundancy costs money
+- **Interactivity vs SEO**: client-side-rendered apps feel rich but are harder for crawlers; server rendering costs more server work
 
 ---
 
-## 10. Priorities for large-scale products
+## 11. Priorities for large-scale products
 
 All of these attributes matter, but at large scale some matter more than others. Failures there hit millions of users at once and cost the most money.
 
